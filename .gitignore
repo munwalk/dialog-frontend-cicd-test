@@ -1,0 +1,308 @@
+# 🔐 보안 관련 파일들 (절대 업로드 금지!)
+.env
+.env.*
+*.env
+application-local.yml
+application-prod.yml
+application-secret.yml
+secrets.yml
+secrets.properties
+config/secrets/
+
+# AWS 및 클라우드 인증 정보
+.aws/
+aws-credentials.properties
+google-credentials.json
+azure-credentials.json
+
+# SSH 키 및 인증서
+*.pem
+*.key
+*.crt
+id_rsa
+id_dsa
+*.pub
+*.ppk
+
+# API 키 및 토큰 파일
+api-keys.txt
+tokens.json
+oauth-config.json
+
+# ===============================================
+# Java & Spring Boot 관련
+# ===============================================
+
+# Compiled class files
+*.class
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Package Files
+*.7z
+
+# JVM Crash logs
+hs_err_pid*
+replay_pid*
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+gradle-app.setting
+!gradle-wrapper.jar
+
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+.mvn/
+mvnw
+mvnw.cmd
+
+# Spring Boot
+spring-boot-*.log
+application-*.log
+
+# ===============================================
+# IDE 관련 파일들
+# ===============================================
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+.idea_modules/
+atlassian-ide-plugin.xml
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties
+
+# Eclipse
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+.project
+.classpath
+.factorypath
+.buildpath
+.target
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# ===============================================
+# 운영체제 관련 파일들
+# ===============================================
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Icon?
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ===============================================
+# CodeEdu LMS 프로젝트 특화 파일들
+# ===============================================
+
+# 업로드된 파일들
+uploads/
+files/
+media/
+temp/
+tmp/
+user-uploads/
+course-materials/
+assignment-files/
+profile-images/
+
+# 로그 파일들
+logs/
+*.log
+*.log.*
+*.out
+application*.log
+spring.log
+logback.log
+
+# 데이터베이스 파일들
+*.db
+*.sqlite
+*.sqlite3
+h2/
+data/
+db/
+
+# 캐시 및 임시 파일들
+.cache/
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 테스트 관련
+test-results/
+coverage/
+.nyc_output/
+*.lcov
+
+# 문서 생성 파일들
+docs/generated/
+javadoc/
+*.pdf
+*.docx
+
+# 개발 도구 설정
+.editorconfig.local
+.eslintcache
+.stylelintcache
+
+# Docker 관련
+docker-compose.override.yml
+.dockerignore.local
+
+# ===============================================
+# 백업 및 임시 파일들
+# ===============================================
+
+# 백업 파일들
+*.backup
+*.bak
+*.old
+*.orig
+*.tmp
+*~
+
+# 압축 파일들 (소스코드 아닌 경우)
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+
+# ===============================================
+# 기타 개발 관련 파일들
+# ===============================================
+
+# 패키지 매니저 잠금 파일들 (선택적)
+# package-lock.json
+# yarn.lock
+
+# 환경별 설정 파일들
+.env.local
+.env.development
+.env.test
+.env.production
+
+# 성능 프로파일링 파일들
+*.prof
+*.hprof
+
+# JUnit 테스트 리포트
+TEST-*.xml
+
+# Mockito 확장 파일들
+mockito-extensions/
+
+# ===============================================
+# 프로젝트별 커스텀 제외 파일들
+# ===============================================
+
+# CodeEdu 개발진만 사용하는 스크립트
+scripts/local/
+scripts/personal/
+my-*.sh
+local-*.bat
+
+# 개발자 개인 메모 및 문서
+NOTES.md
+TODO-personal.md
+dev-notes/
+
+# 실험적 기능 개발 파일들
+experimental/
+sandbox/
+playground/
+
+# 마케팅 및 디자인 자료 (용량이 큰 파일들)
+marketing-materials/
+design-assets/
+*.psd
+*.sketch
+*.fig
+
+# ===============================================
+# 마지막 체크: 민감한 정보가 포함될 수 있는 패턴들
+# ===============================================
+
+# 이메일이나 전화번호가 포함된 파일명
+*email*
+*phone*
+*contact*
+
+# 암호나 토큰이 포함된 파일명  
+*password*
+*token*
+*auth*
+*credential*
+
+# 개인정보가 포함될 수 있는 파일들
+*personal*
+*private*
+*confidential*
