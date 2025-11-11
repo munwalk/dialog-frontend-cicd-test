@@ -113,8 +113,7 @@ async function fetchHomeData() {
         const response = await fetch(`${API_BASE_URL}/events?startDate=${startStr}&endDate=${endStr}`, {
             method: 'GET', credentials: 'include'
         });
-
-        if (response.ok) {
+if (response.ok) {
             const data = await response.json();
             const events = data.map(event => ({
                 ...event,
@@ -126,7 +125,8 @@ async function fetchHomeData() {
             console.log(`✅ 데이터 수신 완료: ${events.length}건`);
             renderAllComponents(events);
         } else {
-            // [🚨 긴급 수정] 500 에러가 나도 모달을 띄우도록 변경
+            // ⚠️ 401(인증) 또는 500(서버 오류) 발생 시, Google 연동 갱신 모달 표시
+            // [HEAD 버전의 긴급 수정 반영]: 500 에러 시에도 모달을 띄우도록 처리
             console.warn(`⚠️ API 오류 발생 (Status: ${response.status})`);
             if (response.status === 401 || response.status === 500) {
                 console.warn("👉 Google 연동 재시도 모달 실행");
@@ -139,7 +139,7 @@ async function fetchHomeData() {
 }
 
 // =========================================
-//  4. Google 연동 모달 (확실하게 동작하도록 수정)
+// 4. Google 연동 모달 (확실하게 동작하도록 수정, feature/userrole 기반)
 // =========================================
 function showGoogleLinkModal() {
     // 1. 기존 모달이 있으면 제거 (중복 방지)
@@ -148,50 +148,47 @@ function showGoogleLinkModal() {
         existingModal.remove();
     }
 
-    // 2. 모달 HTML 동적 생성
+    // 2. 모달 HTML (feature/userrole 버전의 깔끔한 구조 채택)
     const modalHtml = `
-        <div id="googleLinkModal" class="modal-overlay" style="display: flex; opacity: 0; transition: opacity 0.3s ease;">
-            <div class="modal-container" style="transform: translateY(20px); transition: transform 0.3s ease;">
-                <div class="modal-header">
-                    <h3>Google 캘린더 연동 필요</h3>
-                    <button onclick="closeGoogleModal()" class="close-btn" style="cursor: pointer;">✕</button>
-                </div>
-                <div class="modal-body">
-                    <p>최신 일정을 불러오기 위해<br>Google 계정 연동을 갱신해주세요.</p>
-                </div>
-                <div class="modal-footer">
-                    <button onclick="startGoogleLink()" class="google-btn" style="cursor: pointer; width: 100%; padding: 12px; background-color: #4285F4; color: white; border: none; border-radius: 4px; font-weight: bold;">
-                        Google 계정으로 계속하기
-                    </button>
-                </div>
+        <div id="googleLinkModal" class="modal-overlay">
+            <div class="modal-content">
+                <button onclick="closeGoogleModal()" class="modal-close-btn">×</button>
+                <h3>Google 캘린더 연동 필요</h3>
+                <p>최신 일정을 불러오기 위해<br>Google 계정 연동을 갱신해주세요.</p>
+                <button onclick="startGoogleLink()" class="google-btn" style="cursor: pointer; width: 100%; padding: 12px; background-color: #4285F4; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 15px;">
+                    Google 계정으로 계속하기
+                </button>
             </div>
         </div>
     `;
     
-    // 3. body에 추가하고 보이게 설정
+    // 3. body에 추가
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     
-    // 4. 애니메이션을 위해 약간의 지연 후 스타일 변경
+    // 4. 애니메이션을 위해 약간의 지연 후 '.visible' 클래스 추가
     setTimeout(() => {
         const modal = document.getElementById('googleLinkModal');
-        const container = modal.querySelector('.modal-container');
-        if (modal && container) {
-            modal.style.opacity = '1';
-            container.style.transform = 'translateY(0)';
+        if (modal) {
+            // CSS를 통해 opacity와 transform을 제어하는 'visible' 클래스 추가
+            modal.classList.add('visible'); 
         }
     }, 10);
 }
 
-// 전역 함수: 모달 닫기
+// 전역 함수: 모달 닫기 (feature/userrole 버전 채택)
 window.closeGoogleModal = function() {
     const modal = document.getElementById('googleLinkModal');
     if (modal) {
-        modal.style.opacity = '0';
-        setTimeout(() => modal.remove(), 300);
+        modal.classList.remove('visible'); // visible 클래스 제거
+        
+        // 애니메이션(0.2s)이 끝난 후 DOM에서 완전히 제거
+        setTimeout(() => {
+            modal.remove();
+        }, 200); 
     }
 };
 
-// 전역 함수: 연동 시작
+// 전역 함수: 연동 시작 (두 버전 동일)
 window.startGoogleLink = async function() {
     try {
         const res = await fetch('http://localhost:8080/api/calendar/link/start', {
@@ -208,7 +205,6 @@ window.startGoogleLink = async function() {
         alert("연동 중 오류가 발생했습니다.");
     }
 };
-
 // =========================================
 //  5. UI 렌더링 함수들
 // =========================================
