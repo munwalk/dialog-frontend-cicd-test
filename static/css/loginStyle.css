@@ -735,3 +735,85 @@ input[type="checkbox"] {
     width: 20px;
     height: 20px;
 }
+
+/* input-group 수직 정렬 보장 (필요시 추가) */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin-bottom: 18px; /* 그룹 간 여백 */
+}
+
+/* 입력값 바로 아래 에러 메시지 공통 알림 스타일 */
+.alert {
+  position: static;         /* 사파리, 모바일 레이아웃 보정 */
+  margin: 0;
+  margin-top: 4px;          /* input과 에러 메시지 사이 간격 */
+  border-radius: 0;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.5;         /* 오류 메시지 줄간격 */
+  box-sizing: border-box;
+  display: none;
+  box-shadow: none;
+  background: none;
+  user-select: none;
+  cursor: default;
+  padding: 0;
+  border: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  width: 100%;              /* input과 폭 맞춤 */
+  min-height: 20px;         /* 공간 밀림 방지 */
+}
+
+.alert.show {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+  animation: slideDownFade 0.3s ease forwards;
+}
+
+/* 에러 알림 (단순 빨강 텍스트) */
+.error-alert {
+  background: none;
+  color: #d32f2f;
+  border: none;
+}
+
+/* 로그인 성공 알림 - 더욱 강조 스타일 */
+.success-alert {
+  background: linear-gradient(90deg, #6b21a8 0%, #7c3aed 100%);
+  color: #fff;
+  font-size: 1.1em;
+  font-weight: bold;
+  border-radius: 6px;
+  border: 1.5px solid #a78bfa;
+  padding: 14px 22px;
+  margin-bottom: 18px;
+  margin-top: 0;
+  text-align: center;
+  letter-spacing: 1px;
+  box-shadow: 0 6px 24px rgba(124,50,237,0.15);
+  display: none;           /* 기본 숨김 (show 클래스 때문에 block) */
+  z-index: 5;
+  transition: opacity 0.3s, transform 0.3s;
+  opacity: 1;              /* show 되면 보이게 */
+}
+
+.success-alert.show {
+  display: block;
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+/* 애니메이션 */
+@keyframes slideDownFade {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

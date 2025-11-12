@@ -339,6 +339,121 @@ apiClient.interceptors.response.use(
     }
   }
 );
+// =====================================
+// 커스텀 예외 처리 함수 
+// =====================================
+window.CustomExceptionHandlers = {
+    handleGoogleOAuthException(errorData) {
+        showAlert(errorData.message || "Google OAuth 인증 오류가 발생했습니다.", 'error');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userInfo');
+        document.cookie = 'jwt=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        console.warn("GoogleOAuthException 발생, 사용자 재로그인 필요");
+        setTimeout(() => {
+            window.location.href = "/login.html";
+        }, 2000);
+    },
+    handleResourceNotFoundException(errorData) {
+        showAlert(errorData.message || "요청한 리소스를 찾을 수 없습니다.", 'error');
+    },
+    handleAccessDeniedException(errorData) {
+        showAlert(errorData.message || "접근 권한이 없습니다.", 'error');
+    },
+    handleBadRequestException(errorData) {
+        showEmailError(errorData.message || "잘못된 요청입니다.");
+    },
+    handleUserNotFoundException(errorData) {
+        showEmailError(errorData.message || "존재하지 않는 아이디입니다.");
+    },
+    handleUserAlreadyExistsException(errorData) {
+        showAlert(errorData.message || "이미 존재하는 사용자입니다.", 'error');
+    },
+    handleInvalidPasswordException(errorData) {
+        showPasswordError(errorData.message || "비밀번호가 올바르지 않습니다.");
+    },
+    handleInactiveUserException(errorData) {
+        showAlert(errorData.message || "비활성화된 사용자입니다. 문의해 주세요.", 'error');
+    },
+    handleUserRoleAccessDeniedException(errorData) {
+        showAlert(errorData.message || "접근 권한이 없습니다.", 'error');
+    },
+    handleSocialUserSaveException(errorData) {
+        showAlert(errorData.message || "소셜 사용자 저장에 실패했습니다.", 'error');
+    },
+    handleRefreshTokenException(errorData) {
+        showAlert(errorData.message || "리프레시 토큰 오류입니다. 재로그인 해주세요.", 'error');
+    },
+    handleSocialUserInfoException(errorData) {
+        showAlert(errorData.message || "소셜 사용자 정보 처리 중 오류가 발생했습니다.", 'error');
+    },
+    handleInvalidJwtTokenException(errorData) {
+        showAlert(errorData.message || "유효하지 않은 토큰입니다. 재인증이 필요합니다.", 'error');
+    },
+    handleOAuthUserNotFoundException(errorData) {
+        showAlert(errorData.message || "OAuth 사용자 정보를 찾을 수 없습니다.", 'error');
+    },
+    handleTermsNotAcceptedException(errorData) {
+        showAlert(errorData.message || "약관에 동의해야 가입할 수 있습니다.", 'error');
+    },
+    handleErrorResponse(status, errorData) {
+        switch (status) {
+            case 400:
+                if (errorData.error === "약관 미동의") {
+                    this.handleTermsNotAcceptedException(errorData);
+                } else if (errorData.error === "이미 존재하는 사용자") {
+                    this.handleUserAlreadyExistsException(errorData);
+                } else {
+                    this.handleBadRequestException(errorData);
+                }
+                break;
+            case 401:
+                if (errorData.errorCode === "GOOGLE_REAUTH_REQUIRED") {
+                    this.handleGoogleOAuthException(errorData);
+                } else if (errorData.error === "비밀번호 오류") {
+                    this.handleInvalidPasswordException(errorData);
+                } else if (errorData.error === "리프레시 토큰 오류") {
+                    this.handleRefreshTokenException(errorData);
+                } else if (errorData.error === "유효하지 않은 토큰") {
+                    this.handleInvalidJwtTokenException(errorData);
+                } else {
+                    showAlert(errorData.message || "인증이 필요합니다.", 'error');
+                }
+                break;
+            case 403:
+                if (errorData.error === "권한 없음") {
+                    this.handleUserRoleAccessDeniedException(errorData);
+                } else if (errorData.error === "비활성 사용자") {
+                    this.handleInactiveUserException(errorData);
+                } else if (errorData.error === "소셜 사용자 저장 실패") {
+                    this.handleSocialUserSaveException(errorData);
+                } else {
+                    this.handleAccessDeniedException(errorData);
+                }
+                break;
+            case 404:
+                if (errorData.error === "사용자 없음") {
+                    this.handleUserNotFoundException(errorData);
+                } else if (errorData.error === "OAuth 사용자 없음") {
+                    this.handleOAuthUserNotFoundException(errorData);
+                } else {
+                    this.handleResourceNotFoundException(errorData);
+                }
+                break;
+            case 500:
+                if (errorData.error === "소셜 사용자 정보 오류") {
+                    this.handleSocialUserInfoException(errorData);
+                } else {
+                    showAlert("서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.", 'error');
+                }
+                break;
+            default:
+                showAlert(errorData.message || "알 수 없는 오류가 발생했습니다.", 'error');
+                break;
+        }
+    }
+};
+
 
 // =====================================
 // 소셜 로그인 후 또는 토큰 재발급 요청
