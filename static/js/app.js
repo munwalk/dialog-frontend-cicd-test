@@ -343,8 +343,8 @@ apiClient.interceptors.response.use(
 // 커스텀 예외 처리 함수 
 // =====================================
 window.CustomExceptionHandlers = {
-    handleGoogleOAuthException(errorData) {
-        showAlert(errorData.message || "Google OAuth 인증 오류가 발생했습니다.", 'error');
+    handleGoogleOAuthException(errorData, context) {
+        showAlert(errorData.message || "Google OAuth 인증 오류가 발생했습니다.", 'error', context);
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('userInfo');
@@ -354,101 +354,114 @@ window.CustomExceptionHandlers = {
             window.location.href = "/login.html";
         }, 2000);
     },
-    handleResourceNotFoundException(errorData) {
-        showAlert(errorData.message || "요청한 리소스를 찾을 수 없습니다.", 'error');
+    handleResourceNotFoundException(errorData, context) {
+        showAlert(errorData.message || "요청한 리소스를 찾을 수 없습니다.", 'error', context);
     },
-    handleAccessDeniedException(errorData) {
-        showAlert(errorData.message || "접근 권한이 없습니다.", 'error');
+    handleAccessDeniedException(errorData, context) {
+        showAlert(errorData.message || "접근 권한이 없습니다.", 'error', context);
     },
-    handleBadRequestException(errorData) {
-        showEmailError(errorData.message || "잘못된 요청입니다.");
+    handleBadRequestException(errorData, context) {
+        // signup 쪽이면 개별 필드 에러로, 아니면 공통 알림으로
+        if (context === 'signup') {
+            showSignupEmailError(errorData.message || "잘못된 요청입니다.");
+        } else {
+            showAlert(errorData.message || "잘못된 요청입니다.", 'error', context);
+        }
     },
-    handleUserNotFoundException(errorData) {
-        showEmailError(errorData.message || "존재하지 않는 아이디입니다.");
+    handleUserNotFoundException(errorData, context) {
+        if (context === 'signup') {
+            showSignupEmailError(errorData.message || "존재하지 않는 아이디입니다.");
+        } else {
+            showEmailError(errorData.message || "존재하지 않는 아이디입니다.");
+        }
     },
-    handleUserAlreadyExistsException(errorData) {
-        showAlert(errorData.message || "이미 존재하는 사용자입니다.", 'error');
+    handleUserAlreadyExistsException(errorData, context) {
+        showAlert(errorData.message || "이미 존재하는 사용자입니다.", 'error', context);
     },
-    handleInvalidPasswordException(errorData) {
-        showPasswordError(errorData.message || "비밀번호가 올바르지 않습니다.");
+    handleInvalidPasswordException(errorData, context) {
+        if (context === 'signup') {
+            showSignupPasswordError(errorData.message || "비밀번호가 올바르지 않습니다.");
+        } else {
+            showPasswordError(errorData.message || "비밀번호가 올바르지 않습니다.");
+        }
     },
-    handleInactiveUserException(errorData) {
-        showAlert(errorData.message || "비활성화된 사용자입니다. 문의해 주세요.", 'error');
+    handleInactiveUserException(errorData, context) {
+        showAlert(errorData.message || "비활성화된 사용자입니다. 문의해 주세요.", 'error', context);
     },
-    handleUserRoleAccessDeniedException(errorData) {
-        showAlert(errorData.message || "접근 권한이 없습니다.", 'error');
+    handleUserRoleAccessDeniedException(errorData, context) {
+        showAlert(errorData.message || "접근 권한이 없습니다.", 'error', context);
     },
-    handleSocialUserSaveException(errorData) {
-        showAlert(errorData.message || "소셜 사용자 저장에 실패했습니다.", 'error');
+    handleSocialUserSaveException(errorData, context) {
+        showAlert(errorData.message || "소셜 사용자 저장에 실패했습니다.", 'error', context);
     },
-    handleRefreshTokenException(errorData) {
-        showAlert(errorData.message || "리프레시 토큰 오류입니다. 재로그인 해주세요.", 'error');
+    handleRefreshTokenException(errorData, context) {
+        showAlert(errorData.message || "리프레시 토큰 오류입니다. 재로그인 해주세요.", 'error', context);
     },
-    handleSocialUserInfoException(errorData) {
-        showAlert(errorData.message || "소셜 사용자 정보 처리 중 오류가 발생했습니다.", 'error');
+    handleSocialUserInfoException(errorData, context) {
+        showAlert(errorData.message || "소셜 사용자 정보 처리 중 오류가 발생했습니다.", 'error', context);
     },
-    handleInvalidJwtTokenException(errorData) {
-        showAlert(errorData.message || "유효하지 않은 토큰입니다. 재인증이 필요합니다.", 'error');
+    handleInvalidJwtTokenException(errorData, context) {
+        showAlert(errorData.message || "유효하지 않은 토큰입니다. 재인증이 필요합니다.", 'error', context);
     },
-    handleOAuthUserNotFoundException(errorData) {
-        showAlert(errorData.message || "OAuth 사용자 정보를 찾을 수 없습니다.", 'error');
+    handleOAuthUserNotFoundException(errorData, context) {
+        showAlert(errorData.message || "OAuth 사용자 정보를 찾을 수 없습니다.", 'error', context);
     },
-    handleTermsNotAcceptedException(errorData) {
-        showAlert(errorData.message || "약관에 동의해야 가입할 수 있습니다.", 'error');
+    handleTermsNotAcceptedException(errorData, context) {
+        showTermsError(errorData.message || "약관에 동의해야 가입할 수 있습니다.");
     },
-    handleErrorResponse(status, errorData) {
+    handleErrorResponse(status, errorData, context) {
         switch (status) {
             case 400:
                 if (errorData.error === "약관 미동의") {
-                    this.handleTermsNotAcceptedException(errorData);
+                    this.handleTermsNotAcceptedException(errorData, context);
                 } else if (errorData.error === "이미 존재하는 사용자") {
-                    this.handleUserAlreadyExistsException(errorData);
+                    this.handleUserAlreadyExistsException(errorData, context);
                 } else {
-                    this.handleBadRequestException(errorData);
+                    this.handleBadRequestException(errorData, context);
                 }
                 break;
             case 401:
                 if (errorData.errorCode === "GOOGLE_REAUTH_REQUIRED") {
-                    this.handleGoogleOAuthException(errorData);
+                    this.handleGoogleOAuthException(errorData, context);
                 } else if (errorData.error === "비밀번호 오류") {
-                    this.handleInvalidPasswordException(errorData);
+                    this.handleInvalidPasswordException(errorData, context);
                 } else if (errorData.error === "리프레시 토큰 오류") {
-                    this.handleRefreshTokenException(errorData);
+                    this.handleRefreshTokenException(errorData, context);
                 } else if (errorData.error === "유효하지 않은 토큰") {
-                    this.handleInvalidJwtTokenException(errorData);
+                    this.handleInvalidJwtTokenException(errorData, context);
                 } else {
-                    showAlert(errorData.message || "인증이 필요합니다.", 'error');
+                    showAlert(errorData.message || "인증이 필요합니다.", 'error', context);
                 }
                 break;
             case 403:
                 if (errorData.error === "권한 없음") {
-                    this.handleUserRoleAccessDeniedException(errorData);
+                    this.handleUserRoleAccessDeniedException(errorData, context);
                 } else if (errorData.error === "비활성 사용자") {
-                    this.handleInactiveUserException(errorData);
+                    this.handleInactiveUserException(errorData, context);
                 } else if (errorData.error === "소셜 사용자 저장 실패") {
-                    this.handleSocialUserSaveException(errorData);
+                    this.handleSocialUserSaveException(errorData, context);
                 } else {
-                    this.handleAccessDeniedException(errorData);
+                    this.handleAccessDeniedException(errorData, context);
                 }
                 break;
             case 404:
                 if (errorData.error === "사용자 없음") {
-                    this.handleUserNotFoundException(errorData);
+                    this.handleUserNotFoundException(errorData, context);
                 } else if (errorData.error === "OAuth 사용자 없음") {
-                    this.handleOAuthUserNotFoundException(errorData);
+                    this.handleOAuthUserNotFoundException(errorData, context);
                 } else {
-                    this.handleResourceNotFoundException(errorData);
+                    this.handleResourceNotFoundException(errorData, context);
                 }
                 break;
             case 500:
                 if (errorData.error === "소셜 사용자 정보 오류") {
-                    this.handleSocialUserInfoException(errorData);
+                    this.handleSocialUserInfoException(errorData, context);
                 } else {
-                    showAlert("서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.", 'error');
+                    showAlert("서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.", 'error', context);
                 }
                 break;
             default:
-                showAlert(errorData.message || "알 수 없는 오류가 발생했습니다.", 'error');
+                showAlert(errorData.message || "알 수 없는 오류가 발생했습니다.", 'error', context);
                 break;
         }
     }

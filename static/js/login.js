@@ -88,26 +88,43 @@ function showPasswordError(message) {
 /* ===============================
     팝업 알림 함수 (디버깅 로그 포함)
 =================================*/
-function showAlert(message, type) {
-    console.log('showAlert 호출:', message, type);
-    const errorAlert = document.getElementById('errorAlert');
-    const successAlert = document.getElementById('successAlert');
+function showAlert(message, type, context) {
+    let errorAlert, successAlert;
+
+    if (context === 'signup') {
+        errorAlert = document.getElementById('signupErrorAlert');
+        successAlert = document.getElementById('signupSuccessAlert');
+    } else {
+        // 기본값은 로그인폼
+        errorAlert = document.getElementById('signinErrorAlert');
+        successAlert = document.getElementById('signinSuccessAlert');
+    }
+
     if (!errorAlert || !successAlert) {
         console.warn('알림 영역 DOM 요소를 찾을 수 없습니다.');
         return;
     }
-    hideAlerts();
-    clearFieldErrors();
+    hideAlerts(context);
 
-    const alert = type === 'error' ? errorAlert : successAlert;
-    alert.textContent = message;
-    alert.classList.add('show');
-    setTimeout(() => hideAlerts(), 3000); 
+    const alertDiv = type === 'error' ? errorAlert : successAlert;
+    alertDiv.textContent = message;
+    alertDiv.classList.add('show');
+    setTimeout(() => {
+        alertDiv.classList.remove('show');
+        alertDiv.textContent = '';
+    }, 3000);
 }
 
-function hideAlerts() {
-    const errorAlert = document.getElementById('errorAlert');
-    const successAlert = document.getElementById('successAlert');
+
+function hideAlerts(context) {
+    let errorAlert, successAlert;
+    if (context === 'signup') {
+        errorAlert = document.getElementById('signupErrorAlert');
+        successAlert = document.getElementById('signupSuccessAlert');
+    } else {
+        errorAlert = document.getElementById('signinErrorAlert');
+        successAlert = document.getElementById('signinSuccessAlert');
+    }
     if (errorAlert) errorAlert.classList.remove('show');
     if (successAlert) successAlert.classList.remove('show');
 }
@@ -159,12 +176,80 @@ signinForm.addEventListener('submit', async function(e) {
         window.CustomExceptionHandlers.handleErrorResponse(null, { message: '네트워크 오류 또는 서버 오류: ' + error.message });
     }
 });
+// 각 회원가입용 에러 함수, 초기화 함수 추가
+const signupNameErrorAlert = document.getElementById('signupNameErrorAlert');
+const signupEmailErrorAlert = document.getElementById('signupEmailErrorAlert');
+const signupPasswordErrorAlert = document.getElementById('signupPasswordErrorAlert');
+const signupConfirmErrorAlert = document.getElementById('signupConfirmErrorAlert');
+const termsErrorAlert = document.getElementById('termsErrorAlert');
 
+// 전체 에러 초기화
+function clearSignupFieldErrors() {
+    signupNameErrorAlert.textContent = '';
+    signupNameErrorAlert.classList.remove('show');
+    signupEmailErrorAlert.textContent = '';
+    signupEmailErrorAlert.classList.remove('show');
+    signupPasswordErrorAlert.textContent = '';
+    signupPasswordErrorAlert.classList.remove('show');
+    signupConfirmErrorAlert.textContent = '';
+    signupConfirmErrorAlert.classList.remove('show');
+    if(termsErrorAlert) {
+    termsErrorAlert.textContent = '';
+    termsErrorAlert.classList.remove('show');
+    }
+}
+
+// 각 필드 에러 표시 함수
+function showSignupNameError(msg) {
+    clearSignupFieldErrors();
+    signupNameErrorAlert.textContent = msg;
+    signupNameErrorAlert.classList.add('show');
+    setTimeout(() => {
+        signupNameErrorAlert.classList.remove('show');
+        signupNameErrorAlert.textContent = '';
+    }, 2000);
+}
+function showSignupEmailError(msg) {
+    clearSignupFieldErrors();
+    signupEmailErrorAlert.textContent = msg;
+    signupEmailErrorAlert.classList.add('show');
+    setTimeout(() => {
+        signupEmailErrorAlert.classList.remove('show');
+        signupEmailErrorAlert.textContent = '';
+    }, 2000);
+}
+function showSignupPasswordError(msg) {
+    clearSignupFieldErrors();
+    signupPasswordErrorAlert.textContent = msg;
+    signupPasswordErrorAlert.classList.add('show');
+    setTimeout(() => {
+        signupPasswordErrorAlert.classList.remove('show');
+        signupPasswordErrorAlert.textContent = '';
+    }, 2000);
+}
+function showSignupConfirmError(msg) {
+    clearSignupFieldErrors();
+    signupConfirmErrorAlert.textContent = msg;
+    signupConfirmErrorAlert.classList.add('show');
+    setTimeout(() => {
+        signupConfirmErrorAlert.classList.remove('show');
+        signupConfirmErrorAlert.textContent = '';
+    }, 2000);
+}
+function showTermsError(msg) {
+    termsErrorAlert.textContent = msg;
+    termsErrorAlert.classList.add('show');
+    setTimeout(() => {
+        termsErrorAlert.classList.remove('show');
+        termsErrorAlert.textContent = '';
+    }, 2000);
+}
 /* ===============================
     회원가입 폼 제출 처리 (디버깅 포함)
 =================================*/
 signupForm.addEventListener('submit', async function(e) {
     e.preventDefault();
+    clearSignupFieldErrors();
 
     const name = document.getElementById('signup-name').value.trim();
     const email = document.getElementById('signup-email').value.trim();
@@ -172,29 +257,41 @@ signupForm.addEventListener('submit', async function(e) {
     const confirm = document.getElementById('signup-confirm').value;
     const terms = document.getElementById('terms').checked;
 
-    if (!name || !email || !password || !confirm) {
-        window.CustomExceptionHandlers.handleErrorResponse(null, { message: '모든 필드를 입력해주세요.' });
+    if (!name) {
+        showSignupNameError('이름을 입력해주세요.');
         return;
     }
     if (name.length < 2) {
-        window.CustomExceptionHandlers.handleErrorResponse(null, { message: '이름은 2자 이상 입력해주세요.' });
+        showSignupNameError('이름은 2자 이상 입력해주세요.');
+        return;
+    }
+    if (!email) {
+        showSignupEmailError('이메일을 입력해주세요.');
         return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-        window.CustomExceptionHandlers.handleErrorResponse(null, { message: '올바른 이메일 형식을 입력해주세요.' });
+        showSignupEmailError('올바른 이메일 형식을 입력해주세요.');
+        return;
+    }
+    if (!password) {
+        showSignupPasswordError('비밀번호를 입력해주세요.');
         return;
     }
     if (password.length < 12) {
-        window.CustomExceptionHandlers.handleErrorResponse(null, { message: '비밀번호는 12자 이상 입력해주세요.' });
+        showSignupPasswordError('비밀번호는 12자 이상 입력해주세요.');
+        return;
+    }
+    if (!confirm) {
+        showSignupConfirmError('비밀번호 확인을 입력해주세요.');
         return;
     }
     if (password !== confirm) {
-        window.CustomExceptionHandlers.handleErrorResponse(null, { message: '비밀번호가 일치하지 않습니다.' });
+        showSignupConfirmError('비밀번호가 일치하지 않습니다.');
         return;
     }
     if (!terms) {
-        window.CustomExceptionHandlers.handleErrorResponse(null, { message: '약관에 동의해주세요.' });
+        showTermsError('이용약관에 동의해주세요.');
         return;
     }
 
@@ -206,14 +303,14 @@ signupForm.addEventListener('submit', async function(e) {
         });
         const data = await response.json();
         if (response.ok && data.success) {
-            showAlert('회원가입 성공! 로그인 페이지로 이동합니다.', 'success');
+            showAlert('회원가입 성공! 로그인 페이지로 이동합니다.', 'success', 'signup');
             setTimeout(() => {
                 signinTab.click();
                 signupForm.reset();
             }, 2000);
         } else {
             console.log('handleErrorResponse 호출됨', response.status, data);
-            window.CustomExceptionHandlers.handleErrorResponse(response.status, data);
+            window.CustomExceptionHandlers.handleErrorResponse(response.status, data, 'signup');
         }
     } catch (error) {
         console.error('서버 오류:', error);

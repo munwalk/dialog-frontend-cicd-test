@@ -118,8 +118,8 @@
                 <div class="forms-container">
                     <!-- 로그인 폼 -->
                     <form id="signinForm" class="form-section active">
-                        <div id="errorAlert" class="alert error-alert"></div>
-                        <div id="successAlert" class="alert success-alert"></div>
+                            <div id="signinErrorAlert" class="alert error-alert"></div>
+                            <div id="signinSuccessAlert" class="alert success-alert"></div>
                         <div class="input-group">
                             <label>Email</label>
                             <div class="input-wrapper">
@@ -180,11 +180,14 @@
 
                     <!-- 회원가입 폼 -->
                     <form id="signupForm" class="form-section">
+                            <div id="signupErrorAlert" class="alert error-alert"></div>
+                            <div id="signupSuccessAlert" class="alert success-alert"></div>
                         <div class="input-group">
                             <label>이름</label>
                             <div class="input-wrapper">
                                 <input type="text" id="signup-name" placeholder="Your name" required>
                             </div>
+                            <div id="signupNameErrorAlert" class="alert error-alert"></div>
                         </div>
 
                         <div class="input-group">
@@ -192,6 +195,7 @@
                             <div class="input-wrapper">
                                 <input type="email" id="signup-email" placeholder="your@email.com" required>
                             </div>
+                            <div id="signupEmailErrorAlert" class="alert error-alert"></div>
                         </div>
 
                         <div class="input-group">
@@ -205,6 +209,7 @@
                                     </svg>
                                 </span>
                             </div>
+                            <div id="signupPasswordErrorAlert" class="alert error-alert"></div>
                         </div>
 
                         <div class="input-group">
@@ -218,6 +223,7 @@
                                     </svg>
                                 </span>
                             </div>
+                            <div id="signupConfirmErrorAlert" class="alert error-alert"></div>
                         </div>
 
                         <div class="form-options">
@@ -225,6 +231,7 @@
                                 <input type="checkbox" id="terms" required>
                                 <span>이용약관 및 개인정보처리방침 동의</span>
                             </label>
+                            <div id="termsErrorAlert" class="alert error-alert"></div>
                         </div>
 
                         <div class="form-bottom">
