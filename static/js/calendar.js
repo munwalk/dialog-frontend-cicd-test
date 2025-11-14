@@ -90,7 +90,7 @@ async function editApiTodo(eventId, currentTitle, eventDate) {
             method: 'PUT', // 또는 'PATCH'
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify(bodyData) // ⬅️ ⭐️ 3. [수정] 기존 summary 객체 대신 bodyData 사용
+            body: JSON.stringify(bodyData)
         });
 
         if (response.ok) {
@@ -140,52 +140,6 @@ async function deleteApiTodo(eventId, title) {
             console.error('❌ To-do 삭제 중 네트워크 오류:', error);
             alert('❌ 네트워크 오류가 발생했습니다.');
         }
-    }
-}
-
-
-/* ===============================================
-// 3. 사용자 인증 (API 기반)
-=================================================*/
-function displayUserName(user) {
-    if (user) {
-        document.querySelectorAll(".user-name").forEach(el => {
-            el.textContent = user.name || user.email || "사용자";
-        });
-        document.querySelectorAll(".user-email").forEach(el => {
-            el.textContent = user.email || "";
-        });
-        document.querySelectorAll(".user-avatar").forEach(el => {
-            el.textContent = (user && user.name) ? user.name.charAt(0).toUpperCase() : "U";
-        });
-    } 
-    console.log('UI 업데이트:', user ? user.email : '로그아웃 상태');
-}
-
-// (API) [이름 변경] loadCurrentUser -> loadCurrentUserWithGlobalSet
-async function loadCurrentUserWithGlobalSet() { 
-    try {
-        const response = await fetch('http://localhost:8080/api/auth/me', {
-            credentials: 'include' 
-        });
-
-        if (response.ok) {
-            const user = await response.json();
-            currentUser = user; 
-            displayUserName(user);
-            return user;
-        } else if (response.status === 401) {
-            console.warn('인증되지 않음 (401). 로그인 페이지로 이동합니다.');
-            window.location.href = '/login.html'; 
-            return null;
-        } else {
-            displayUserName(null);
-            return null;
-        }
-    } catch (error) {
-        console.error('네트워크 오류:', error);
-        displayUserName(null);
-        return null;
     }
 }
 
@@ -334,7 +288,8 @@ function renderTodoList(dateString) {
 
     todos.forEach(event => {
         const todoItem = document.createElement('div');
-        todoItem.className = 'todo-item';
+        //todoItem.className = 'todo-item';
+        todoItem.className = `todo-item ${event.isCompleted ? 'completed' : ''}`;
         const eventId = event.googleEventId || event.id; 
         
         todoItem.innerHTML = `
@@ -462,13 +417,23 @@ function showDailyEventOverlay(dateString) {
     if (todos.length === 0) {
         todoList.innerHTML = '<p class="cell-secondary" style="text-align: center; padding: 16px;">등록된 할 일이 없습니다.</p>';
     } else {
-        todos.forEach(event => {
+            todos.forEach(event => {
             const eventItem = document.createElement('div');
-            eventItem.className = `daily-event-item type-personal`;
+            eventItem.className = `daily-event-item type-personal ${event.isCompleted ? 'completed' : ''}`;
+
+            const categoryText = (event.eventType === 'TASK') ? '업무' : '개인';
+
+            const titleStyle = event.isCompleted ? 'text-decoration: line-through; color: #9ca3af;' : '';
+            const metaStyle = 'font-size: 13px; color: #6b7280; margin-top: 2px;';
+            const statusHtml = event.isCompleted ? '<span style="color: #8b5cf6; font-weight: 600;"> • 확인</span>' : '';
+
             eventItem.innerHTML = `
                 <div class="event-details">
-                    <div class="event-title">${event.title}</div>
-                    <div class="event-meta">개인</div>
+                    <div class="event-title" style="${titleStyle}">${event.title}</div>
+                    <div class="event-meta" style="${metaStyle}">
+                        <span class="event-category">${categoryText}</span>
+                        ${statusHtml}
+                    </div>
                 </div>
             `;
             todoList.appendChild(eventItem);
@@ -638,6 +603,7 @@ async function loadCalendarEvents(year, monthIndex) {
         const response = await fetch(FETCH_URL, {
             method: 'GET',
             credentials: 'include',
+            cache: 'no-store'
         });
 
         if (header) header.textContent = `${year}년 ${month}월`;
@@ -727,93 +693,78 @@ async function toggleImportance(eventId, starBtn) {
     }
 }
 
-// 이벤트 리스너 추가 함수 안되면 삭제해야함. (pih 수정.)
 document.addEventListener("DOMContentLoaded", () => {
 
+    // 1. [병합] 별표 버튼 클릭 리스너 (이벤트 위임)
     document.addEventListener('click', function(e) {
-        // 클릭된 요소가 star-btn이거나 그 내부 요소인 경우
         const starBtn = e.target.closest('.star-btn');
-
         if (starBtn) {
             const meetingId = starBtn.getAttribute('data-meeting-id');
 
-            // 1. 즉각적인 UI 반응 (Optimistic UI)
             starBtn.classList.toggle('active');
             const svg = starBtn.querySelector('svg');
             if (starBtn.classList.contains('active')) {
-                 svg.setAttribute('fill', 'currentColor');
+                svg.setAttribute('fill', 'currentColor');
             } else {
-                 svg.setAttribute('fill', 'none');
+                svg.setAttribute('fill', 'none');
             }
-
-            // 2. 서버로 API 요청 보내기
+            
             console.log(`⭐ 별표 클릭됨! ID: ${meetingId}`);
-            toggleImportance(meetingId, starBtn); // 위에서 정의한 함수 호출
+            toggleImportance(meetingId, starBtn);
         }
     });
 
-});
+    // 2. 챗봇 로드 (병렬 처리)
+    fetch("components/chatbot.html")
+        .then(res => res.ok ? res.text() : Promise.reject('Chatbot HTML not found'))
+        .then(html => {
+            const container = document.getElementById("chatbot-container");
+            if (container) {
+                container.innerHTML = html;
+                
+                const closeBtn = container.querySelector(".close-chat-btn");
+                const sendBtn = container.querySelector(".send-btn");
+                const chatInput = container.querySelector("#chatInput");
+                const floatingBtn = document.getElementById("floatingChatBtn");
 
-document.addEventListener("DOMContentLoaded", () => {
-    
-    // 1. 챗봇 로드 (병렬 처리)
-    fetch("components/chatbot.html")
-        .then(res => res.ok ? res.text() : Promise.reject('Chatbot HTML not found'))
-        .then(html => {
-            const container = document.getElementById("chatbot-container");
-            if (container) {
-                container.innerHTML = html;
-                
-                const closeBtn = container.querySelector(".close-chat-btn");
-                const sendBtn = container.querySelector(".send-btn");
-                const chatInput = container.querySelector("#chatInput");
-                const floatingBtn = document.getElementById("floatingChatBtn");
+                if (closeBtn && typeof closeChat === 'function') closeBtn.addEventListener("click", closeChat);
+                if (sendBtn && typeof sendMessage === 'function') sendBtn.addEventListener("click", sendMessage);
+                if (chatInput && typeof handleChatEnter === 'function') chatInput.addEventListener("keypress", handleChatEnter);
+                if (floatingBtn && typeof openChat === 'function') floatingBtn.addEventListener("click", openChat);
+            }
+        })
+        .catch(error => console.error('챗봇 로드 실패:', error));
 
-                //  app.js 또는 chatbot.js에 함수가 있다고 가정
-                if (closeBtn && typeof closeChat === 'function') closeBtn.addEventListener("click", closeChat);
-                if (sendBtn && typeof sendMessage === 'function') sendBtn.addEventListener("click", sendMessage);
-                if (chatInput && typeof handleChatEnter === 'function') chatInput.addEventListener("keypress", handleChatEnter);
-                if (floatingBtn && typeof openChat === 'function') floatingBtn.addEventListener("click", openChat);
-            }
-        })
-        .catch(error => console.error('챗봇 로드 실패:', error));
+    // 3. 사이드바 로드 및 메인 로직 시작 (순차 처리)
+    fetch("components/sidebar.html")
+        .then(res => res.ok ? res.text() : Promise.reject('Sidebar HTML not found'))
+        .then(html => {
+            const sidebar = document.getElementById("sidebar-container");
+            if (!sidebar) throw new Error("사이드바 컨테이너(#sidebar-container)를 찾을 수 없습니다.");
+            sidebar.innerHTML = html;
+            return loadCurrentUser();
+        })
+        .then(user => { 
+            currentUser = user; 
 
-    // 2. 사이드바 로드 (순차 처리)
-    fetch("components/sidebar.html")
-        .then(res => res.ok ? res.text() : Promise.reject('Sidebar HTML not found'))
-        .then(html => {
-            const sidebar = document.getElementById("sidebar-container");
-            if (!sidebar) throw new Error("사이드바 컨테이너(#sidebar-container)를 찾을 수 없습니다.");
-            sidebar.innerHTML = html;
+            const sidebar = document.getElementById("sidebar-container");
+            const currentPage = window.location.pathname.split("/").pop();
+            const navItems = sidebar.querySelectorAll(".nav-menu a");
+            navItems.forEach(item => {
+                const linkPath = item.getAttribute("href");
+                item.classList.toggle("active", linkPath === currentPage);
+            });
 
-            // [병합] API 기반 사용자 정보 로드
-            return loadCurrentUserWithGlobalSet();
-        })
-        .then(user => { 
-            // 3. 사이드바 "active" 클래스 처리
-            const sidebar = document.getElementById("sidebar-container");
-            const currentPage = window.location.pathname.split("/").pop();
-            const navItems = sidebar.querySelectorAll(".nav-menu a");
-            navItems.forEach(item => {
-                const linkPath = item.getAttribute("href");
-                if (linkPath === currentPage) {
-                    item.classList.add("active");
-                } else {
-                    item.classList.remove("active");
-                }
-            });
-
-            // 4. (가장 중요) 캘린더 앱 로직 시작
-            if (user) {
-                console.log("로그인 사용자 확인: " + (user.email || "이메일 없음"));
-                initializeCalendar(); 
-            } else { 
-                console.error("오류: 사용자 정보를 가져올 수 없습니다. (user is null)");
-            }
-        })
-        .catch(error => {
-            console.error('페이지 초기화 실패 (사이드바 또는 사용자 정보):', error);
-        });
+            if (currentUser) {
+                console.log("로그인 사용자 확인: " + (currentUser.email || "이메일 없음"));
+                initializeCalendar(); 
+            } else { 
+                console.error("오류: 사용자 정보를 가져올 수 없습니다. (user is null)");
+            }
+        })
+        .catch(error => {
+            console.error('페이지 초기화 실패 (사이드바 또는 사용자 정보):', error);
+        });
 });
 
 /* ===============================================
@@ -856,7 +807,4 @@ function getCookie(name) {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
     if (parts.length === 2) return parts.pop().split(';').shift();
-}
-
-function injectUserInfo() {
 }

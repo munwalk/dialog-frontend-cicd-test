@@ -52,53 +52,91 @@ function addUser() {
   alert('신규 유저 추가!');
 }
 
-async function loadUsers() {
-  try {
-    const response = await apiClient.get('/admin/users');
-    const users = response.data;
+// async function loadUsers() {
+//   try {
+//     const response = await apiClient.get('/admin/users');
+//     const users = response.data;
 
-    cachedUsers = users; 
+//     cachedUsers = users; 
     
-    const tbody = document.querySelector('.users-table tbody');
-    if (!tbody) {
-        console.error("테이블 <tbody>를 찾을 수 없습니다.");
-        return;
-    }
-    tbody.innerHTML = ''; 
+//     const tbody = document.querySelector('.users-table tbody');
+//     if (!tbody) {
+//         console.error("테이블 <tbody>를 찾을 수 없습니다.");
+//         return;
+//     }
+//     tbody.innerHTML = ''; 
 
-    if (!users || users.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">등록된 사용자가 없습니다.</td></tr>';
-        return;
-    }
+//     if (!users || users.length === 0) {
+//         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">등록된 사용자가 없습니다.</td></tr>';
+//         return;
+//     }
 
-    users.forEach(user => {
-      const tr = document.createElement('tr');
+//     users.forEach(user => {
+//       const tr = document.createElement('tr');
       
-      // ✅ 디버깅: 콘솔에 user 객체 출력
-      console.log('User data:', user);
+//       // ✅ 디버깅: 콘솔에 user 객체 출력
+//       console.log('User data:', user);
       
-      tr.innerHTML = `
-        <td>${user.name || '이름 없음'}</td>
-        <td>${user.email || '-'}</td>
-        <td><span class="role-badge ${user.role ? user.role.toLowerCase() : 'user'}">${user.role || 'USER'}</span></td>
-        <td><span class="user-status ${user.active ? 'active' : 'deactivated'}">${user.active ? '활성' : '비활성'}</span></td>
-        <td>${user.regDate ? new Date(user.regDate).toLocaleDateString('ko-KR') : '-'}</td>
-        <td>
-          <div class="user-actions">
-            <button class="small-action-btn" onclick="editUser('${user.id}')">수정</button>
-            <button class="small-action-btn danger" onclick="deleteUser('${user.id}')">삭제</button>
-          </div>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-  } catch (error) {
-    console.error('유저 목록 로드 실패:', error);
-    const tbody = document.querySelector('.users-table tbody');
-    if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">목록을 불러오는 데 실패했습니다.</td></tr>';
-    }
-  }
+//       tr.innerHTML = `
+//         <td>${user.name || '이름 없음'}</td>
+//         <td>${user.email || '-'}</td>
+//         <td><span class="role-badge ${user.role ? user.role.toLowerCase() : 'user'}">${user.role || 'USER'}</span></td>
+//         <td><span class="user-status ${user.active ? 'active' : 'deactivated'}">${user.active ? '활성' : '비활성'}</span></td>
+//         <td>${user.regDate ? new Date(user.regDate).toLocaleDateString('ko-KR') : '-'}</td>
+//         <td>
+//           <div class="user-actions">
+//             <button class="small-action-btn" onclick="editUser('${user.id}')">수정</button>
+//             <button class="small-action-btn danger" onclick="deleteUser('${user.id}')">삭제</button>
+//           </div>
+//         </td>
+//       `;
+//       tbody.appendChild(tr);
+//     });
+//   } catch (error) {
+//     console.error('유저 목록 로드 실패:', error);
+//     const tbody = document.querySelector('.users-table tbody');
+//     if (tbody) {
+//         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">목록을 불러오는 데 실패했습니다.</td></tr>';
+//     }
+//   }
+// }
+
+async function loadUsers() {
+  try {
+    const response = await apiClient.get('/admin/users');
+    const users = response.data;
+
+    cachedUsers = users; 
+    
+    const tbody = document.querySelector('.users-table tbody');
+    if (!tbody) {
+        console.error("테이블 <tbody>를 찾을 수 없습니다.");
+        return;
+    }
+    tbody.innerHTML = ''; 
+
+    if (!users || users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">등록된 사용자가 없습니다.</td></tr>';
+        return;
+    }
+
+    users.forEach(user => {
+      const tr = document.createElement('tr');
+      
+      // ✅ 디버깅: 콘솔에 user 객체 출력
+      console.log('User data:', user);
+      
+
+      tr.innerHTML = `<td>${user.name || '이름 없음'}</td><td>${user.email || '-'}</td><td><span class="role-badge ${user.role ? user.role.toLowerCase() : 'user'}">${user.role || 'USER'}</span></td><td><select class="user-status ${user.active ? 'active' : 'deactivated'}" onchange="updateUserStatus(this, '${user.id}', this.value)"><option value="true" ${user.active ? 'selected' : ''}>활성</option><option value="false" ${!user.active ? 'selected' : ''}>비활성</option></select></td><td>${user.regDate ? new Date(user.regDate).toLocaleDateString('ko-KR') : '-'}</td><td><div class="user-actions"><button class="small-action-btn" onclick="editUser('${user.id}')">수정</button><button class="small-action-btn danger" onclick="deleteUser('${user.id}')">삭제</button></div></td>`;
+      tbody.appendChild(tr);
+    });
+  } catch (error) {
+    console.error('유저 목록 로드 실패:', error);
+    const tbody = document.querySelector('.users-table tbody');
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">목록을 불러오는 데 실패했습니다.</td></tr>';
+    }
+  }
 }
 
 function editUser(userId) {
@@ -166,4 +204,59 @@ async function deleteUser(userId) {
         alert('삭제 중 오류가 발생했습니다.');
     }
   }
+}
+
+/**
+ * 사용자 상태(활성/비활성)를 변경하는 함수
+ * (기존 UserSettingsUpdateDto를 재활용하여 PUT으로 전송)
+ * @param {HTMLSelectElement} selectElement - 변경이 일어난 <select> 요소 (this)
+ * @param {string} userId - 변경할 사용자의 ID
+ * @param {string} newStatusValue - 새로운 상태 값 ("true" 또는 "false")
+ */
+async function updateUserStatus(selectElement, userId, newStatusValue) {
+    
+    const isActive = (newStatusValue === 'true'); 
+
+    // 1. (⭐️중요⭐️) 캐시된 데이터에서 이 사용자의 job, position을 찾습니다.
+    //    @NotNull 필드를 채워야 하기 때문입니다.
+    const user = cachedUsers.find(u => u.id == userId);
+    if (!user) {
+        alert('캐시된 사용자 정보를 찾을 수 없어 상태를 변경할 수 없습니다.');
+        return;
+    }
+
+    // 2. 시각적 스타일 즉시 업데이트
+    if (isActive) {
+        selectElement.classList.remove('deactivated');
+        selectElement.classList.add('active');
+    } else {
+        selectElement.classList.remove('active');
+        selectElement.classList.add('deactivated');
+    }
+
+    try {
+        // 3. 백엔드로 보낼 DTO 객체 생성 (UserSettingsUpdateDto)
+        const updateDto = {
+            job: user.job,           // 캐시에서 가져온 기존 값
+            position: user.position, // 캐시에서 가져온 기존 값
+            active: isActive         // ⭐️새롭게 변경된 상태 값
+        };
+        await apiClient.put(`/admin/users/settings/${userId}`, updateDto);        
+        // 5. API가 성공했으므로, JS 캐시에도 상태를 반영합니다.
+        user.active = isActive;
+
+    } catch (error) {
+        console.error('사용자 상태 변경 실패:', error);
+        alert('상태 변경 중 오류가 발생했습니다.');
+
+        // 6. (실패 시) 시각적 스타일을 원래대로 롤백
+        selectElement.value = !isActive; // <select> 값 되돌리기
+        if (isActive) {
+            selectElement.classList.remove('active');
+            selectElement.classList.add('deactivated');
+        } else {
+            selectElement.classList.remove('deactivated');
+            selectElement.classList.add('active');
+        }
+    }
 }

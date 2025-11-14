@@ -366,7 +366,7 @@
 }
 
 /* ============================================
-   반응형
+반응형
    ============================================ */
 
 @media (max-width: 1024px) {
@@ -468,7 +468,7 @@
 .google-btn {
     width: 100%;
     padding: 12px;
-    background-color: #4285F4;
+    background-color: #8E44AD;
     color: white;
     border: none;
     border-radius: 8px;
@@ -518,58 +518,89 @@
   background: #7d3c98;
 }
 
-/* ===============================
-    Google 연동 모달 스타일 (추가)
-=================================*/
-.modal-overlay {
-  display: none; /* 기본 숨김 */
-  position: fixed;
-  z-index: 1000;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0,0,0,0.5);
-  justify-content: center;
-  align-items: center;
-  opacity: 0;
-  transition: opacity 0.2s ease;
+.google-link-banner {
+    position: fixed; /* position이 fixed여야 transform이 올바르게 동작합니다 */
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    background-color: #fff8e1;
+    border-bottom: 1px solid #ffecb3;
+    padding: 16px 24px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    opacity: 0;
+    transform: translateY(-100%); 
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.google-link-banner .banner-actions {
+    display: flex;
+    align-items: center; /* (추가) 세로 중앙 정렬 */
+    gap: 12px;
 }
 
-.modal-overlay.visible {
-  display: flex;
-  opacity: 1;
+.google-link-banner.visible {
+    opacity: 1; /* 1. 보이는 상태: 불투명하게 */
+    transform: translateY(0); /* 2. 보이는 상태: 제자리로 */
 }
 
-.modal-content {
-  background-color: #fff;
-  padding: 24px;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 450px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  text-align: center;
-  position: relative;
+.google-empty-state {
+    /* * (중요) 부모(.deadline-list, .todo-list)가 
+     * flex: 1 또는 flex-grow: 1을 가지고 있어
+     * 이 컨테이너가 남은 빈 공간을 모두 차지합니다.
+     */
+    height: 100%;
+    
+    /* 내용물(아이콘, 텍스트, 버튼)을 세로로 배치 */
+    display: flex;
+    flex-direction: column;
+
+    /* 내용물을 수직/수평 중앙에 정렬 */
+    justify-content: center;
+    align-items: center;
+
+    padding: 20px;
+    text-align: center;
 }
 
-.modal-close-btn {
-  position: absolute;
-  top: 10px;
-  right: 15px;
-  background: none;
-  border: none;
-  font-size: 24px;
-  color: #999;
-  cursor: pointer;
+/* 아이콘 스타일 (이모지 사용) */
+.empty-state-icon {
+    font-size: 36px; /* 이모지 아이콘 크기 */
+    margin-bottom: 16px;
+    opacity: 0.8;
 }
 
-.modal-content h3 {
-  margin-top: 0;
-  margin-bottom: 12px;
+/* 안내 텍스트 스타일 */
+.empty-state-text {
+    font-size: 14px;
+    color: #6b7280; /* 너무 진하지 않은 회색 */
+    line-height: 1.6;
+    margin-bottom: 24px;
+    margin-top: 0;
 }
 
-.modal-content p {
-  margin-bottom: 24px;
-  color: #555;
+/* 연동 버튼 스타일 */
+.empty-state-button {
+    /* 기존 .admin-btn-small 스타일과 유사하게 맞춤 */
+    height: 34px;
+    padding: 0 14px;
+    font-size: 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    border-radius: 8px;
+    background: #8E44AD; /* 대시보드 메인 보라색 */
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    transition: background 0.16s;
+}
+
+.empty-state-button:hover {
+    background: #7d3c98; /* 보라색 hover */
 }
