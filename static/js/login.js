@@ -378,3 +378,73 @@ if (kakaoSignupBtn) {
         window.location.href = 'http://localhost:8080/oauth2/authorization/kakao';
     });
 }
+
+// ===============================
+//   비밀번호 찾기 (이메일 인증) 모달 기능
+// ===============================
+
+// 모달 관련 요소 선택
+const forgotLink = document.querySelector('.forgot-link');
+const modal = document.getElementById('forgotPasswordModal');
+const modalClose = document.querySelector('.modal-close');
+const sendForgotBtn = document.getElementById('sendForgotBtn');
+const forgotMessage = document.getElementById('forgotMessage');
+
+// 1. "비밀번호를 잊으셨나요?" 클릭 시 모달 열기
+if (forgotLink && modal) {
+    forgotLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        document.getElementById('forgotEmail').value = '';
+        forgotMessage.textContent = '';
+        forgotMessage.classList.remove('success-alert', 'error-alert');
+        modal.style.display = 'flex';
+    });
+}
+
+// 2. 닫기 버튼/모달 바깥 클릭 시 닫기
+if (modalClose && modal) {
+    modalClose.addEventListener('click', function() {
+        modal.style.display = 'none';
+    });
+    window.addEventListener('click', function(e) {
+        if (e.target === modal) modal.style.display = 'none';
+    });
+}
+
+// 3. "메일 보내기" 버튼 클릭 시 API 호출
+if (sendForgotBtn) {
+    sendForgotBtn.addEventListener('click', function() {
+        const email = document.getElementById('forgotEmail').value.trim();
+        forgotMessage.textContent = '';
+        forgotMessage.classList.remove('success-alert', 'error-alert');
+
+        if (!email || !email.includes('@')) {
+            forgotMessage.textContent = '이메일 주소를 올바르게 입력하세요.';
+            forgotMessage.classList.add('error-alert');
+            return;
+        }
+
+        fetch('http://localhost:8080/api/auth/forgotPassword', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                forgotMessage.textContent = '메일이 발송되었습니다. 메일함을 확인하세요.';
+                forgotMessage.classList.remove('error-alert');
+                forgotMessage.classList.add('success-alert');
+            } else {
+                forgotMessage.textContent = data.message || '발송 실패';
+                forgotMessage.classList.remove('success-alert');
+                forgotMessage.classList.add('error-alert');
+            }
+        })
+        .catch(() => {
+            forgotMessage.textContent = '서버 오류가 발생했습니다.';
+            forgotMessage.classList.remove('success-alert');
+            forgotMessage.classList.add('error-alert');
+        });
+    });
+}

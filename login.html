@@ -265,6 +265,15 @@
             </div>
         </div>
     </div>
+    <div id="forgotPasswordModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <span class="modal-close">&times;</span>
+        <h3>비밀번호 재설정 메일 보내기</h3>
+        <input type="email" id="forgotEmail" placeholder="이메일 입력" autocomplete="username" />
+        <button id="sendForgotBtn" class="btn-submit" style="margin-top: 15px;">메일 보내기</button>
+        <div id="forgotMessage" class="alert error-alert"></div>
+        </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="static/js/app.js"></script>
     <script src="static/js/login.js"></script>

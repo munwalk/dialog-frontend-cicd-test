@@ -306,3 +306,8 @@ design-assets/
 *personal*
 *private*
 *confidential*
+
+# 패턴 예외 처리
+!static/css/resetpassword.css
+!static/js/resetpassword.js
+!resetpassword.html
