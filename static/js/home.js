@@ -280,7 +280,7 @@ function renderTodoList(events) {
         item.querySelector('.todo-checkbox').addEventListener('change', async (e) => {
             
             // 1. e.target.checked 값 확인 (체크하면 true, 해제하면 false)
-            console.log("체크박스 변경:", e.target.checked); // 👈 (디버깅 로그 추가)
+            console.log("체크박스 변경:", e.target.checked); 
 
             item.classList.toggle('completed', e.target.checked);
 
@@ -321,40 +321,67 @@ function renderImportantMeetings(events) { // 'events'는 필터링 전 원본 �
 
     // 4. [로직 수정]
     if (meetings.length > 0) {
-        // 1. 보여줄 중요 회의가 있음
+        // 1. 보여줄 중요 회의가 있음
         listEl.innerHTML = '';
     } else if (events.length > 0) {
-        // 2. API는 성공(events.length > 0)했지만, 필터된 중요 회의가 없음 (meetings.length === 0)
+        // 2. API는 성공(events.length > 0)했지만, 필터된 중요 회의가 없음 (meetings.length === 0)
         listEl.innerHTML = noMeetingsHtml;
     } else {
-        // 3. API가 실패/오류 (events.length === 0)
+        // 3. API가 실패/오류 (events.length === 0)
         listEl.innerHTML = emptyStateHtml;
     }
 
     // 5. 회의 목록 렌더링 (이 코드는 meetings.length > 0 일 때만 실행됨)
     meetings.forEach(m => {
         const diff = Math.ceil((m.date - todayOnly) / (1000 * 60 * 60 * 24));
-        listEl.innerHTML += `<div class="deadline-item ${diff <= 3 ? 'urgent' : ''}"><div class="deadline-info"><div class="deadline-title">${m.title}</div><div class="deadline-meta"><span class="deadline-date">${m.date.getMonth() + 1}/${String(m.date.getDate()).padStart(2, '0')}</span><span class="deadline-badge ${diff <= 3 ? 'urgent' : ''}">${diff === 0 ? 'D-Day' : 'D-' + diff}</span></div></div></div>`;
+        
+        // [수정 1] 날짜 문자열(YYYY-MM-DD) 생성
+        const dateStr = formatDate(m.date); 
+        
+        // [수정 2] HTML에 onclick과 style="cursor: pointer;" 추가
+        listEl.innerHTML += `
+            <div class="deadline-item ${diff <= 3 ? 'urgent' : ''}" 
+                 onclick="goToCalendarWithDate('${dateStr}')" 
+                 style="cursor: pointer;"
+                 title="클릭하여 캘린더에서 보기">
+                <div class="deadline-info">
+                    <div class="deadline-title">${m.title}</div>
+                    <div class="deadline-meta">
+                        <span class="deadline-date">${m.date.getMonth() + 1}/${String(m.date.getDate()).padStart(2, '0')}</span>
+                        <span class="deadline-badge ${diff <= 3 ? 'urgent' : ''}">${diff === 0 ? 'D-Day' : 'D-' + diff}</span>
+                    </div>
+                </div>
+            </div>`;
     });
 }
 function loadRecentMeetings() {
-    console.log('🔄 "최근 회의" 데이터 로드 시작...');
+    console.log('🔄 "최근 회의" 데이터 로드 시작... (통합 API 호출)');
 
-    // [수정] /api/calendar/events가 아닌 /api/meetings 호출
-    fetch('http://localhost:8080/api/meetings', {
+    const endDate = new Date(today);
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - 60); // 60일 전
+
+    const startStr = formatDate(startDate);
+    const endStr = formatDate(endDate);
+    
+    fetch(`http://localhost:8080/api/calendar/events?startDate=${startStr}&endDate=${endStr}`, {
         method: 'GET',
         credentials: 'include' 
     })
     .then(response => {
         if (response.status === 401) throw new Error('인증 실패 (401)');
-        if (!response.ok) throw new Error('최근 회의 API 호출 실패');
+        if (!response.ok) throw new Error('최근 회의 API(통합) 호출 실패');
         return response.json();
     })
-    .then(meetingList => { // DTO가 배열이라고 가정
-        const processedEvents = meetingList.map(meeting => ({
-            date: new Date(meeting.scheduledAt), // DTO 필드명 확인 필요
+    .then(allEventsList => {    
+       
+        const meetingsOnly = allEventsList.filter(e => e.eventType === 'MEETING');
+        
+        const processedEvents = meetingsOnly.map(meeting => ({
+            date: new Date(meeting.eventDate + 'T' + (meeting.time || '00:00:00')), 
             title: meeting.title,
-            type: 'meeting'
+            type: 'meeting',
+            eventDateStr: meeting.eventDate // ⭐️ 캘린더 이동에 필요한 YYYY-MM-DD
         }));
 
         renderRecentMeetings(processedEvents);
@@ -374,21 +401,34 @@ function renderRecentMeetings(events) {
 
     listEl.innerHTML = meetings.length ? '' : '<div class="empty-message" style="color: #9ca3af; text-align: center; padding: 24px 0;">최근 회의 기록이 없습니다</div>';
     meetings.forEach(m => {
-        listEl.innerHTML += `<div class="meeting-item"><div class="meeting-info"><div class="meeting-title">${m.title}</div><div class="meeting-meta"><span class="meeting-date">${String(m.date.getMonth() + 1).padStart(2, '0')}/${String(m.date.getDate()).padStart(2, '0')}</span><span class="meeting-participants">회의</span></div></div></div>`;
+        listEl.innerHTML += `
+            <div class="meeting-item">
+                <div class="meeting-info">
+                    <div 
+                        class="meeting-title" 
+                        onclick="goToCalendarWithDate('${m.eventDateStr}')"
+                        style="cursor: pointer;"
+                        title="캘린더에서 이 날짜 보기">
+                        ${m.title}
+                    </div>
+                    <div class="meeting-meta">
+                        <span class="meeting-date">${String(m.date.getMonth() + 1).padStart(2, '0')}/${String(m.date.getDate()).padStart(2, '0')}</span>
+                        <span class="meeting-participants">회의</span>
+                    </div>
+                </div>
+            </div>`;
     });
 }
 
 
-async function updateTodoStatus(todoId, isCompleted) {
-    // 👇 (디버깅 로그 추가)
+async function updateTodoStatus(todoId, isCompleted) {   
     console.log(`서버로 전송: ID=${todoId}, 완료상태=${isCompleted}`); 
-
     try { 
         await fetch(`${API_BASE_URL}/events/${todoId}/completion`, { 
             method: 'PATCH', 
             headers: { 'Content-Type': 'application/json' }, 
             credentials: 'include',
-            body: JSON.stringify({ isCompleted: isCompleted }) // 👈 이 isCompleted가 true여야 합니다.
+            body: JSON.stringify({ isCompleted: isCompleted })
         }); 
     } catch (e) { 
         console.error(e); 
@@ -397,3 +437,7 @@ async function updateTodoStatus(todoId, isCompleted) {
 // 기타 리스너
 //document.addEventListener('visibilitychange', () => { if (!document.hidden) fetchHomeData(); });
 function goToMeetings() { window.location.href = 'meetings.html'; }
+
+function goToCalendarWithDate(dateStr) {
+    window.location.href = `calendar.html?date=${dateStr}`;
+}

@@ -66,53 +66,123 @@ async function addDailyTodo() {
     }
 }
 async function editApiTodo(eventId, currentTitle, eventDate) {
-    const newTitle = prompt('할 일 수정:', currentTitle);
+    // 1. 커스텀 모달 생성
+    const modalOverlay = document.createElement('div');
+    modalOverlay.className = 'modal-overlay'; 
+    modalOverlay.id = 'editTodoModal';
+
+    const modalContent = document.createElement('div');    
+    modalContent.className = 'modal-container'; 
+
+    modalContent.innerHTML = `
+        <div class="modal-header">
+            <h3>할 일 수정</h3>
+            <button class="close-btn">×</button> 
+        </div>
+        <div class="modal-body">
+            <input type="text" id="editTodoInput" class="edit-modal-input" value="${currentTitle}">
+        </div>
+           <div class="modal-footer">
+            <button class="edit-modal-btn cancel">취소</button>
+            <button class="edit-modal-btn confirm">확인</button>
+        </div>
+    `;
+
+    modalOverlay.appendChild(modalContent);
+    document.body.appendChild(modalOverlay);
     
-    if (!newTitle || !newTitle.trim() || newTitle === currentTitle) {
-        return; // 변경 없으면 취소
+    // 3. 모달 내 input에 포커스
+    const editInput = document.getElementById('editTodoInput');
+    if (editInput) {
+        editInput.focus();
+        editInput.select();
     }
-        
-    const EDIT_URL = `${CALENDAR_BASE_URL}/events/${eventId}`; 
-    
-    // 2. [수정] 백엔드가 요구하는 올바른 JSON 본문(bodyData) 생성
-    const bodyData = {
-        calendarId: "primary", // 기본 캘린더 ID
-        eventData: {
-            summary: newTitle.trim(),
-            start: { date: eventDate }, // 1번에서 전달받은 날짜
-            end: { date: eventDate }   // 1번에서 전달받은 날짜
-        }
+
+    // 4. 애니메이션을 위해 10ms 뒤 'visible' 클래스 추가
+    setTimeout(() => modalOverlay.classList.add('visible'), 10);
+
+    // 5. 닫기 함수
+    const closeModal = () => {
+        modalOverlay.classList.remove('visible');
+        setTimeout(() => {
+            if (document.body.contains(modalOverlay)) {
+                document.body.removeChild(modalOverlay);
+            }
+        }, 300); // 0.3초 트랜지션 후 제거
     };
 
-    try {
-        console.log(`🔄 To-do 수정 요청: ${eventId} -> ${newTitle}`);
-        const response = await fetch(EDIT_URL, {
-            method: 'PUT', // 또는 'PATCH'
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify(bodyData)
-        });
-
-        if (response.ok) {
-            showSuccessMessage('할 일이 수정되었습니다');
-            renderCalendar(); // API로 캘린더 전체 새로고침
-        } else {
-            // [수정] 백엔드의 JSON 오류 메시지를 더 잘 보여주도록 개선
-            let errorText = await response.text();
-           try {
-               const errorJson = JSON.parse(errorText);
-               if (errorJson && errorJson.message) {
-                   errorText = errorJson.message; // "eventData는 필수입니다."
-               }
-           } catch (e) {
-               // 파싱 실패 시 HTML 텍스트(로그인 페이지)를 그대로 보여줌
-           }
-            console.error(`❌ To-do 수정 실패 (${response.status}):`, errorText);
-            alert(`❌ To-do 수정 실패: ${errorText}`);
+    // 6. 이벤트 리스너 (확인, 취소, X, 배경)
+    modalContent.querySelector('.confirm').addEventListener('click', async () => {
+        const newTitle = editInput.value;
+        
+        if (!newTitle || !newTitle.trim() || newTitle === currentTitle) {
+            closeModal();
+            return; 
         }
-    } catch (error) {
-        console.error('❌ To-do 수정 중 네트워크 오류:', error);
-        alert('❌ 네트워크 오류가 발생했습니다.');
+    
+        const EDIT_URL = `${CALENDAR_BASE_URL}/events/${eventId}`; 
+        
+        const bodyData = {
+            calendarId: "primary",
+            eventData: {
+                summary: newTitle.trim(),
+                start: { date: eventDate },
+                end: { date: eventDate }
+            }
+        };
+
+        try {
+            console.log(`🔄 To-do 수정 요청: ${eventId} -> ${newTitle}`);
+            const response = await fetch(EDIT_URL, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(bodyData)
+            });
+
+            if (response.ok) {
+                showSuccessMessage('할 일이 수정되었습니다');
+                renderCalendar(); // 캘린더 새로고침
+            } else {
+                let errorText = await response.text();
+               try {
+                   const errorJson = JSON.parse(errorText);
+                   if (errorJson && errorJson.message) {
+                       errorText = errorJson.message;
+                   }
+               } catch (e) {}
+                console.error(`❌ To-do 수정 실패 (${response.status}):`, errorText);
+                alert(`❌ To-do 수정 실패: ${errorText}`);
+            }
+        } catch (error) {
+            console.error('❌ To-do 수정 중 네트워크 오류:', error);
+            alert('❌ 네트워크 오류가 발생했습니다.');
+        } finally {
+            closeModal(); // 성공/실패 여부와 관계없이 모달 닫기
+        }
+    });
+
+    // 취소 버튼
+    modalContent.querySelector('.cancel').addEventListener('click', closeModal);
+    
+    // 닫기 버튼 (헤더)
+    modalContent.querySelector('.close-btn').addEventListener('click', closeModal);
+
+    // 배경 클릭
+    modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) {
+            closeModal();
+        }
+    });
+
+    // Enter 키로 '확인' 동작
+    if (editInput) {
+        editInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                modalContent.querySelector('.confirm').click();
+         }
+        });
     }
 }
 // (API) To-do 삭제
@@ -372,9 +442,12 @@ function displayEventDots(events) {
 // [UI 렌더링] 날짜 클릭 시 오버레이 표시 (UI Dev 코드)
 function showDailyEventOverlay(dateString) {
     const dailyEventsList = document.getElementById('dailyEventsList');
-    const dailyEventsTitle = document.getElementById('dailyEventsTitle');
-    const dailyEventsContent = document.getElementById('dailyEventsContent');
-    if (!dailyEventsList || !dailyEventsTitle || !dailyEventsContent) return;
+    const dailyEventsTitle = document.getElementById('dailyEventsTitle');
+    const dailyEventsContent = document.getElementById('dailyEventsContent');
+    if (!dailyEventsList || !dailyEventsTitle || !dailyEventsContent) {
+        console.error("오버레이 상세창의 HTML ID(dailyEventsList 등)를 찾을 수 없습니다.");
+        return; 
+    }
 
     dailyEventsTitle.textContent = `${formatDisplayDate(dateString)}의 일정`;
     dailyEventsContent.innerHTML = ''; 
@@ -417,33 +490,33 @@ function showDailyEventOverlay(dateString) {
     if (todos.length === 0) {
         todoList.innerHTML = '<p class="cell-secondary" style="text-align: center; padding: 16px;">등록된 할 일이 없습니다.</p>';
     } else {
-            todos.forEach(event => {
-            const eventItem = document.createElement('div');
-            eventItem.className = `daily-event-item type-personal ${event.isCompleted ? 'completed' : ''}`;
+        todos.forEach(event => {
+        const eventItem = document.createElement('div');
+        eventItem.className = `daily-event-item type-personal ${event.isCompleted ? 'completed' : ''}`;
 
-            const categoryText = (event.eventType === 'TASK') ? '업무' : '개인';
+        const categoryText = (event.eventType === 'TASK') ? '업무' : '개인';
 
-            const titleStyle = event.isCompleted ? 'text-decoration: line-through; color: #9ca3af;' : '';
-            const metaStyle = 'font-size: 13px; color: #6b7280; margin-top: 2px;';
-            const statusHtml = event.isCompleted ? '<span style="color: #8b5cf6; font-weight: 600;"> • 확인</span>' : '';
+        const titleStyle = event.isCompleted ? 'text-decoration: line-through; color: #9ca3af;' : '';
+        const metaStyle = 'font-size: 13px; color: #6b7280; margin-top: 2px;';
+        const statusHtml = event.isCompleted ? '<span style="color: #8b5cf6; font-weight: 600;"> • 확인</span>' : '';
 
-            eventItem.innerHTML = `
-                <div class="event-details">
-                    <div class="event-title" style="${titleStyle}">${event.title}</div>
-                    <div class="event-meta" style="${metaStyle}">
-                        <span class="event-category">${categoryText}</span>
-                        ${statusHtml}
-                    </div>
+        eventItem.innerHTML = `
+            <div class="event-details">
+                <div class="event-title" style="${titleStyle}">${event.title}</div>
+                <div class="event-meta" style="${metaStyle}">
+                    <span class="event-category">${categoryText}</span>
+                    ${statusHtml}
                 </div>
-            `;
-            todoList.appendChild(eventItem);
-        });
+            </div>
+        `;
+        todoList.appendChild(eventItem);
+    });
     }
     todoSection.appendChild(todoList);
     
     dailyEventsContent.appendChild(meetingSection);
     dailyEventsContent.appendChild(todoSection);
-    dailyEventsList.classList.remove('hidden'); // 오버레이 표시
+    dailyEventsList.classList.remove('hidden');
 }
 
 // [UI 렌더링] 오버레이 닫기 (UI Dev 코드)
@@ -460,27 +533,46 @@ window.closeDailyEvents = function() {
     selectDate(todayStr, false); // false: 오버레이 안 띄움
 }
 
-// 캘린더 초기화 (메인)
-function initializeCalendar() {
-    console.log("캘린더 초기화 및 렌더링 시작...");
-    
-    const today = new Date();
-    currentYearMonth = new Date(today.getFullYear(), today.getMonth(), 1); 
-    
-    document.getElementById('prevMonthBtn')?.addEventListener('click', () => changeMonth(-1));
-    document.getElementById('nextMonthBtn')?.addEventListener('click', () => changeMonth(1));
-    document.getElementById('addTodoBtn')?.addEventListener('click', addDailyTodo);
-    document.getElementById('todoInput')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            addDailyTodo(); 
-        }
-    });
+async function initializeCalendar() {
+    console.log("캘린더 초기화 및 렌더링 시작...");
+    
+    // 1. URL에서 'date' 파라미터 읽기
+    const urlDate = getQueryParam('date'); // 헬퍼 함수 사용
+    const today = new Date();
+    const todayStr = formatDateString(today);
 
-    renderCalendar(); // 캘린더 UI 그리기 (API 호출 시작)
+    let targetDate;
+    let showOverlayOnLoad = false; // 오버레이 띄울지 결정하는 변수
 
-    const todayStr = formatDateString(today);
-    selectDate(todayStr, false);
+    // 2. URL 날짜 유효성 검사
+    if (isValidDateString(urlDate)) { // 헬퍼 함수 사용
+        console.log(`URL에서 날짜 (${urlDate})를 로드합니다.`);
+        targetDate = urlDate; 
+        const parts = urlDate.split('-').map(Number);
+        currentYearMonth = new Date(parts[0], parts[1] - 1, 1); 
+        showOverlayOnLoad = true; // ⭐️ URL에 날짜가 있으니 오버레이 띄움!
+    } else {
+        console.log("URL 날짜가 없거나 유효하지 않습니다. 오늘 날짜로 시작합니다.");
+        targetDate = todayStr;
+        currentYearMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    }
+    
+    // 3. 이벤트 리스너 등록
+    document.getElementById('prevMonthBtn')?.addEventListener('click', () => changeMonth(-1));
+    document.getElementById('nextMonthBtn')?.addEventListener('click', () => changeMonth(1));
+    document.getElementById('addTodoBtn')?.addEventListener('click', addDailyTodo);
+    document.getElementById('todoInput')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            addDailyTodo(); 
+        }
+    });
+
+    // 4. 캘린더 렌더링
+    await renderCalendar(); 
+
+    // 5. URL에서 가져온 설정대로 날짜 선택 및 오버레이 표시
+    selectDate(targetDate, showOverlayOnLoad);
 }
 
 // 월 변경
@@ -492,7 +584,7 @@ function changeMonth(delta) {
 }
 
 // 캘린더 그리기 (API 호출 트리거)
-function renderCalendar() {
+async function renderCalendar() {
     const grid = document.getElementById('calendarGrid');
     const header = document.getElementById('currentMonthYear');
     if (!grid || !header) return;
@@ -577,9 +669,10 @@ function renderCalendar() {
     
     // 캘린더 이벤트 로드 (API 호출)
     if (currentUser) {
-        loadCalendarEvents(year, month); // month (0-11)
+        await loadCalendarEvents(year, month); // month (0-11)
     } else {
         console.warn("캘린더 이벤트 로드 중단: 사용자 정보(currentUser)가 설정되지 않았습니다.");
+        return Promise.resolve();
     }
 }
 
@@ -807,4 +900,15 @@ function getCookie(name) {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
     if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+function getQueryParam(name) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(name); // 예: '2025-11-21' 또는 null
+}
+
+// 2. 날짜 문자열이 'YYYY-MM-DD' 형식인지 간단히 검사
+function isValidDateString(dateStr) {
+    if (!dateStr) return false;
+    return /^\d{4}-\d{2}-\d{2}$/.test(dateStr);
 }
