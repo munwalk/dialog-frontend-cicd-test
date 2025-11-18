@@ -20,9 +20,19 @@
         </button>
     </div>
 
+    <!-- 탭 형태 모드 선택 -->
+    <div class="chat-mode-tabs">
+        <button id="searchModeBtn" class="mode-tab active" onclick="switchChatMode('search')">
+            📝 회의록 검색
+        </button>
+        <button id="faqModeBtn" class="mode-tab" onclick="switchChatMode('faq')">
+            💡 FAQ
+        </button>
+    </div>
+
     <div class="chat-messages" id="chatMessages">
         <div class="message bot">
-            <div class="message-bubble">안녕하세요! <span id="chat-name">사용자</span>님 👋 오늘도 멋진 회의를 시작해보세요.</div>
+            <div class="message-bubble">안녕하세요! 👋 오늘도 멋진 회의를 시작해보세요.</div>
         </div>
     </div>
 

@@ -57,7 +57,8 @@ function activateCurrentNav(sidebar) {
 // =========================================
 //  3. 홈 데이터 관리 (API 기반)
 // =========================================
-const API_BASE_URL = 'http://localhost:8080/api/calendar';
+// [수정] app.js의 API_BASE_URL과 충돌 방지를 위해 CALENDAR_API_BASE로 변경
+const CALENDAR_API_BASE = 'http://localhost:8080/api/calendar';
 const today = new Date();
 
 async function initHomeData() {
@@ -87,7 +88,9 @@ async function fetchHomeData() {
 
     try {
         console.log(`📡 API 데이터 요청: ${startStr} ~ ${endStr}`);
-        const response = await fetch(`${API_BASE_URL}/events?startDate=${startStr}&endDate=${endStr}`, {
+
+        // [수정] app.js와 충돌 방지를 위해 CALENDAR_API_BASE 사용
+        const response = await fetch(`${CALENDAR_API_BASE}/events?startDate=${startStr}&endDate=${endStr}`, {
             method: 'GET', credentials: 'include', cache: 'no-store'
         });
 
@@ -423,8 +426,9 @@ function renderRecentMeetings(events) {
 
 async function updateTodoStatus(todoId, isCompleted) {   
     console.log(`서버로 전송: ID=${todoId}, 완료상태=${isCompleted}`); 
-    try { 
-        await fetch(`${API_BASE_URL}/events/${todoId}/completion`, { 
+    try {
+        // [수정] CALENDAR_API_BASE 사용
+        await fetch(`${CALENDAR_API_BASE}/events/${todoId}/completion`, { 
             method: 'PATCH', 
             headers: { 'Content-Type': 'application/json' }, 
             credentials: 'include',

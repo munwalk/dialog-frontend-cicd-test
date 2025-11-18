@@ -1,3 +1,19 @@
+// ============================================================
+// 챗봇 CSS/JS 동적 로드
+// ============================================================
+
+// 챗봇 CSS 로드
+const chatbotCSS = document.createElement('link');
+chatbotCSS.rel = 'stylesheet';
+chatbotCSS.href = 'static/css/chatbot.css';
+document.head.appendChild(chatbotCSS);
+
+// ============================================================
+// API URL 설정
+// ============================================================
+
+const API_BASE_URL = 'http://localhost:8080/api';
+
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     if (sidebar) {
@@ -35,6 +51,15 @@ function changePage(pageName) {
 function openChat() {
     const chat = document.getElementById("chatBot");
     if (!chat) return;
+    
+    // [추가] display 복구 (flex로 시도)
+    chat.style.display = 'flex';
+    
+    // [추가] 챗봇 열 때 초기화
+    if (typeof initChatbot === 'function') {
+        initChatbot();
+    }
+    
     chat.classList.add("open");
     const floatingBtn = document.getElementById("floatingChatBtn");
     if (floatingBtn) floatingBtn.classList.add("hidden");
@@ -42,9 +67,27 @@ function openChat() {
 }
 
 function closeChat() {
-    const chat = document.getElementById("chatBot");
-    if (!chat) return;
-    chat.classList.remove("open");
+    const chatBot = document.getElementById('chatBot');
+    if (!chatBot) return;
+    
+    chatBot.classList.remove('open'); // ← 클래스로 처리
+    
+    // 나머지 코드는 그대로
+    const chatMessages = document.getElementById('chatMessages');
+    if (chatMessages) {
+        chatMessages.innerHTML = '';
+        chatMessages.dataset.initialized = 'false';
+    }
+    
+    currentChatHistory = [];
+    currentSessionId = null;
+    
+    if (currentTypingTimeout) {
+        clearTimeout(currentTypingTimeout);
+        currentTypingTimeout = null;
+    }
+    
+    // [추가] 플로팅 버튼 다시 표시
     const floatingBtn = document.getElementById("floatingChatBtn");
     if (floatingBtn) floatingBtn.classList.remove("hidden");
     document.body.classList.remove("chat-open");
@@ -549,3 +592,19 @@ function logout() {
         dropdown.classList.remove('active');
     }
 }
+
+// ============================================================
+// 챗봇 JS 로드 (맨 마지막에 실행)
+// ============================================================
+
+const chatbotJS = document.createElement('script');
+chatbotJS.src = 'static/js/chatbot.js';
+chatbotJS.onload = function() {
+    // [추가] chatbot.js 로드 완료 후 초기화
+    setTimeout(() => {
+        if (typeof initChatbot === 'function' && document.getElementById('chatMessages')) {
+            initChatbot();
+        }
+    }, 100);
+};
+document.body.appendChild(chatbotJS);

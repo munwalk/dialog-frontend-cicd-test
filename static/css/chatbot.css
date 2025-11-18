@@ -1,0 +1,78 @@
+/* 탭 형태 모드 선택 */
+.chat-mode-tabs {
+    display: flex;
+    background: #fff;
+    border-bottom: 2px solid #e9ecef;
+    padding: 0;
+}
+
+.mode-tab {
+    flex: 1;
+    padding: 14px 20px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #6c757d;
+    position: relative;
+    transition: all 0.3s;
+    border-bottom: 3px solid transparent;
+}
+
+.mode-tab:hover {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+.mode-tab.active {
+    color: #7c3aed;
+    border-bottom-color: #7c3aed;
+    background: #fff;
+    font-weight: 600;
+}
+
+/* 로딩 애니메이션 */
+.loading-dots {
+    display: flex;
+    gap: 4px;
+    padding: 8px 0;
+}
+
+.loading-dots span {
+    width: 8px;
+    height: 8px;
+    background: #999;
+    border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out;
+}
+
+.loading-dots span:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.loading-dots span:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+    0%, 80%, 100% {
+        transform: scale(0);
+        opacity: 0.5;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* 출처 태그 */
+.source-tag {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 4px 8px;
+    background: rgba(124, 58, 237, 0.1);
+    border-radius: 4px;
+    font-size: 12px;
+    color: #7c3aed;
+}
