@@ -13,6 +13,28 @@
   margin-bottom: 0px !important;
 }
 
+/* 모든 스크롤바 영역 */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px; /* 가로 스크롤바도 고려 */
+}
+
+/* 스크롤바 트랙(배경) */
+::-webkit-scrollbar-track {
+    background: transparent; /* 트랙 배경 숨김 */
+}
+
+/* 스크롤바 막대(thumb) */
+::-webkit-scrollbar-thumb {
+    background: #d1d5db; /* 기본 회색 */
+    border-radius: 3px;
+}
+
+/* 스크롤바 막대에 마우스 올렸을 때 */
+::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af; /* 더 진한 회색 */
+}
+
 /* 헤더 - 고정 */
 .rcf-header {
   margin-bottom: 25px;
@@ -216,23 +238,6 @@
   padding-right: 8px;
 }
 
-.transcript-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.transcript-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.transcript-list::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 3px;
-}
-
-.transcript-list::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
-}
-
 .transcript-item {
   margin-bottom: 16px;
   position: relative;
@@ -345,23 +350,6 @@
   min-height: 0;
 }
 
-.content-sidebar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.content-sidebar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.content-sidebar::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 3px;
-}
-
-.content-sidebar::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
-}
-
 .sidebar-section {
   margin-bottom: 24px;
   background: white;
@@ -417,23 +405,6 @@
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #d1d5db transparent;
-}
-
-.summary-editor::-webkit-scrollbar {
-  width: 6px;
-}
-
-.summary-editor::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.summary-editor::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 3px;
-}
-
-.summary-editor::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
 }
 
 .summary-editor:focus {
@@ -1160,18 +1131,6 @@ hr.modal-divider {
 	padding-right: 8px;
 }
 
-/* (스크롤바 스타일) */
-.keywords-manage-list::-webkit-scrollbar {
-	width: 6px;
-}
-.keywords-manage-list::-webkit-scrollbar-track {
-	background: transparent;
-}
-.keywords-manage-list::-webkit-scrollbar-thumb {
-	background: #d1d5db;
-	border-radius: 3px;
-}
-
 .keyword-manage-item {
 	display: flex;
 	justify-content: space-between;
@@ -1276,4 +1235,69 @@ hr.modal-divider {
 }
 .undo-transcript-btn:hover {
   color: #10b981 !important; /* 복구: 초록 */
+}
+
+.transcript-editor-group {
+    margin-bottom: 8px;
+}
+
+.transcript-editor-label {
+    font-size: 12px;
+    font-weight: 600;
+    /* form-label의 기존 스타일(display: block, color 등)은 상속받아 사용 */
+}
+
+.transcript-editor-textarea {
+    width: 100%;
+    padding: 8px;
+    border: 2px solid #8E44AD; /* 편집 중임을 강조하는 보더 */
+    border-radius: 8px;
+    font-size: 15px;
+    line-height: 1.7;
+    resize: vertical;
+    min-height: 60px;
+    margin-top: 0;
+    /* .summary-editor의 기본 스타일(font-family, focus 등)을 상속받음 */
+}
+
+.transcript-editor-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+/* 태그 기본 모양 (호버 효과 없음) */
+.action-source-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 8px;
+    cursor: default; /* [1번 해결] 클릭/호버 효과 없음 */
+    border: 1px solid transparent;
+}
+
+/* AI 생성 (진한 회색) */
+.action-source-tag.ai {
+    background-color: #E5E7EB; /* [2번 해결] 진한 회색 */
+    color: #374151;
+    border-color: #D1D5DB;
+}
+
+/* 사용자 (진한 보라색) */
+.action-source-tag.user {
+    background-color: #F3E8FF; /* [2번 해결] 진한 보라색 */
+    color: #7E22CE;
+    border-color: #D8B4FE;
+}
+
+.transcript-highlight {
+    background-color: #fef3c7; /* .keyword.active와 동일한 배경색 */
+    color: #d97706; /* .keyword.active와 동일한 글자색 */
+    padding: 2px 4px; /* 키워드 태그보다 작은 패딩 */
+    border-radius: 4px;
+    font-weight: 600; /* 살짝 강조 */
+    cursor: text !important; /* [문제 해결] 마우스 커서를 텍스트(I)로 고정 */
 }

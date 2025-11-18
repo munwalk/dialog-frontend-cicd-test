@@ -300,18 +300,45 @@ function renderImportantMeetings(events) { // 'events'는 필터링 전 원본 �
     const meetings = events.filter(e => (e.important === true && e.type === 'meeting') && e.date >= todayOnly).sort((a, b) => a.date - b.date).slice(0, 3);
 
     // 2. "Google 연동" 버튼 HTML (API 실패 시 사용)
-    const emptyStateHtml = `
-        <div class="google-empty-state">
-            <span class="empty-state-icon">📅</span>
-            <p class="empty-state-text">
-                Google 캘린더를 연동하고<br>
-                중요한 회의 일정을 자동으로 불러오세요.
-            </p>
-            <button class="empty-state-button" onclick="openGoogleAuthModal()">
-                + Google 계정 연동하기
-            </button>
-        </div>`;
-    
+   const emptyStateHtml = `
+    <div class="google-empty-state" style="
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        padding: 20px;
+        box-sizing: border-box;
+    ">       
+
+        <p class="empty-state-text" style="
+            font-size: 14px;
+            color: #6b7280;
+            line-height: 1.6;
+            margin-top: 0;
+            margin-bottom: 24px;
+            text-align: center; /* 텍스트 자체도 가운데 정렬 */
+        ">
+            Google 캘린더를 연동하고<br>
+            중요한 회의 일정을 자동으로 불러오세요.
+        </p>
+
+        <button class="empty-state-button" style="
+            height: 34px;
+            padding: 0 14px;
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            border-radius: 8px;
+            background: #8E44AD; /* 메인 보라색 */
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        " onclick="openGoogleAuthModal()">
+            + Google 계정 연동하기
+        </button>
+    </div>`;
     // 3. "중요 회의 없음" 메시지 (API는 성공했으나, 필터 결과가 0건일 때 사용)
     const noMeetingsHtml = `
         <div class="empty-message" style="color: #9ca3af; text-align: center; padding: 24px 0;">
@@ -396,8 +423,12 @@ function renderRecentMeetings(events) {
     const listEl = document.querySelector('.meeting-list');
     if (!listEl) return;
     const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const tomorrowOnly = new Date(todayOnly);
+    tomorrowOnly.setDate(todayOnly.getDate() + 1);
     // const meetings = events.filter(e => e.type === 'meeting' && e.date < todayOnly).sort((a, b) => b.date - a.date).slice(0, 3);
-    const meetings = events.filter(e => e.type === 'meeting' && e.date < todayOnly).sort((a, b) => b.date - a.date).slice(0, 3);
+    const meetings = events.filter(e => e.type === 'meeting' && e.date < tomorrowOnly)
+        .sort((a, b) => b.date - a.date) // 최신순 정렬
+        .slice(0, 3); // 상위 3개
 
     listEl.innerHTML = meetings.length ? '' : '<div class="empty-message" style="color: #9ca3af; text-align: center; padding: 24px 0;">최근 회의 기록이 없습니다</div>';
     meetings.forEach(m => {

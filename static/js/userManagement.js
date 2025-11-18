@@ -52,55 +52,6 @@ function addUser() {
   alert('신규 유저 추가!');
 }
 
-// async function loadUsers() {
-//   try {
-//     const response = await apiClient.get('/admin/users');
-//     const users = response.data;
-
-//     cachedUsers = users; 
-    
-//     const tbody = document.querySelector('.users-table tbody');
-//     if (!tbody) {
-//         console.error("테이블 <tbody>를 찾을 수 없습니다.");
-//         return;
-//     }
-//     tbody.innerHTML = ''; 
-
-//     if (!users || users.length === 0) {
-//         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">등록된 사용자가 없습니다.</td></tr>';
-//         return;
-//     }
-
-//     users.forEach(user => {
-//       const tr = document.createElement('tr');
-      
-//       // ✅ 디버깅: 콘솔에 user 객체 출력
-//       console.log('User data:', user);
-      
-//       tr.innerHTML = `
-//         <td>${user.name || '이름 없음'}</td>
-//         <td>${user.email || '-'}</td>
-//         <td><span class="role-badge ${user.role ? user.role.toLowerCase() : 'user'}">${user.role || 'USER'}</span></td>
-//         <td><span class="user-status ${user.active ? 'active' : 'deactivated'}">${user.active ? '활성' : '비활성'}</span></td>
-//         <td>${user.regDate ? new Date(user.regDate).toLocaleDateString('ko-KR') : '-'}</td>
-//         <td>
-//           <div class="user-actions">
-//             <button class="small-action-btn" onclick="editUser('${user.id}')">수정</button>
-//             <button class="small-action-btn danger" onclick="deleteUser('${user.id}')">삭제</button>
-//           </div>
-//         </td>
-//       `;
-//       tbody.appendChild(tr);
-//     });
-//   } catch (error) {
-//     console.error('유저 목록 로드 실패:', error);
-//     const tbody = document.querySelector('.users-table tbody');
-//     if (tbody) {
-//         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">목록을 불러오는 데 실패했습니다.</td></tr>';
-//     }
-//   }
-// }
-
 async function loadUsers() {
   try {
     const response = await apiClient.get('/admin/users');

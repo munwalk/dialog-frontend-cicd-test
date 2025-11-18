@@ -26,6 +26,7 @@
 .meetings-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
   margin-top: 10px;
   font-size: 15px;
   color: #222;

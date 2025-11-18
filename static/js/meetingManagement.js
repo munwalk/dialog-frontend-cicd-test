@@ -87,45 +87,79 @@ async function loadAndRenderMeetings() {
     }
 }
 
-function createMeetingRow(user) { // 변수명을 meeting 대신 user로 변경
-    const tr = document.createElement('tr');
+function createMeetingRow(meeting) {
+    const tr = document.createElement('tr');
 
-    // --- AdminResponse DTO 기준으로 필드 매핑 ---
-    const meetingId = meeting.meetingId || 'N/A'; // DTO의 'meetingId' 사용
-    const title = meeting.title || '제목 없음'; // DTO의 'title' 사용
-    const date = meeting.scheduledAt ? new Date(meeting.scheduledAt).toLocaleDateString() : '날짜 없음'; // DTO의 'scheduledAt' 사용
-    const participants = meeting.participants && meeting.participants.length > 0 ? meeting.participants.join(', ') : '참여자 없음'; // DTO의 'participants' 리스트 사용    
-    const statusText = (meeting.status === 'CLOSED') ? '종료' : '진행중'; 
-    const statusClass = (meeting.status === 'CLOSED') ? 'closed' : 'ongoing';
-    const author = 'N/A';
+    const meetingId = meeting.meetingId;
+    const title = meeting.title || '제목 없음';
+    const date = meeting.scheduledAt ? new Date(meeting.scheduledAt).toLocaleDateString() : '날짜 없음';
+    const participants = meeting.participants && meeting.participants.length > 0 ? meeting.participants.join(', ') : '참여자 없음';
+    const statusText = (meeting.status === 'CLOSED') ? '종료' : '진행중';
+    const statusClass = (meeting.status === 'CLOSED') ? 'closed' : 'ongoing';
+    
+    const author = meeting.authorName || 'N/A';
 
-       tr.innerHTML = `
-            <td>${title}</td>
-            <td>${date}</td>
-            <td>${participants}</td>
-            <td><span class="meeting-status ${statusClass}">${statusText}</span></td>
-            <td>${author}</td>
-            <td>
-                <div class="meeting-actions">
-                    <button class="small-action-btn" data-action="details" data-id="${meetingId}">상세</button>
-                    <button class="small-action-btn" data-action="edit" data-id="${meetingId}">수정</button>
-                    <button class="small-action-btn danger" data-action="delete" data-id="${meetingId}">삭제</button>
-                </div>
-            </td>
-        `;
+    const tdTitle = document.createElement('td');
+    tdTitle.textContent = title;
+    tr.appendChild(tdTitle);
 
-        // 각 버튼에 클릭 이벤트 리스너 연결
-        tr.querySelector('[data-action="details"]').addEventListener('click', handleDetailsClick);
-        tr.querySelector('[data-action="edit"]').addEventListener('click', handleEditClick);
-        tr.querySelector('[data-action="delete"]').addEventListener('click', handleDeleteClick);
+    const tdDate = document.createElement('td');
+    tdDate.textContent = date;
+    tr.appendChild(tdDate);
 
-        return tr;
+    const tdParticipants = document.createElement('td');
+    tdParticipants.textContent = participants;
+    tr.appendChild(tdParticipants);
+
+    const tdStatus = document.createElement('td');
+    tdStatus.innerHTML = `<span class="meeting-status ${statusClass}">${statusText}</span>`;
+    tr.appendChild(tdStatus);
+
+    const tdAuthor = document.createElement('td');
+    tdAuthor.textContent = author;
+    tr.appendChild(tdAuthor);
+
+    const tdActions = document.createElement('td');
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'meeting-actions';
+
+    // 상세 버튼
+    const detailsBtn = document.createElement('button');
+    detailsBtn.className = 'small-action-btn';
+    detailsBtn.dataset.action = 'details';
+    detailsBtn.dataset.id = meetingId;
+    detailsBtn.textContent = '상세';
+    detailsBtn.addEventListener('click', handleDetailsClick);
+
+    // 수정 버튼
+    const editBtn = document.createElement('button');
+    editBtn.className = 'small-action-btn';
+    editBtn.dataset.action = 'edit';
+    editBtn.dataset.id = meetingId;
+    editBtn.textContent = '수정';
+    editBtn.addEventListener('click', handleEditClick);
+
+    // 삭제 버튼
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'small-action-btn danger';
+    deleteBtn.dataset.action = 'delete';
+    deleteBtn.dataset.id = meetingId;
+    deleteBtn.textContent = '삭제';
+    deleteBtn.addEventListener('click', handleDeleteClick);
+
+    actionsDiv.appendChild(detailsBtn);
+    actionsDiv.appendChild(editBtn);
+    actionsDiv.appendChild(deleteBtn);
+    tdActions.appendChild(actionsDiv);
+    tr.appendChild(tdActions);
+
+    return tr;
 }
 
 function handleDetailsClick(event) {
     const meetingId = event.target.dataset.id;
-    alert(`상세: ${meetingId}번 회의 (상세 페이지 이동 로직 필요)`);
-    // 예: window.location.href = \`/meeting-details.html?id=\${meetingId}\`;
+    //alert(`상세: ${meetingId}번 회의 (상세 페이지 이동 로직 필요)`);
+    window.location.href = `meetingDetail.html?id=${meetingId}`;
 }
 
 function handleEditClick(event) {
@@ -136,24 +170,30 @@ function handleEditClick(event) {
 }
 
 async function handleDeleteClick(event) {
-    const meetingId = event.target.dataset.id;
-    if (confirm(`회의(ID: ${meetingId})를 정말 삭제하시겠습니까?`)) {
-        
-        // **중요**: 현재 AdminController에는 '/api/admin/meetings/{id}'로 DELETE하는 기능이 없습니다.
-        // 해당 기능이 백엔드에 추가되어야 실제 삭제가 가능합니다.
-        
-        alert(`삭제: ${meetingId}번 회의 (백엔드 API 구현 필요)`);
+    const meetingId = event.target.dataset.id;
+    const deleteButton = event.target;
 
-        /* // (참고) 백엔드에 'DELETE /api/admin/meetings/{id}'가 구현되었을 때의 실제 코드
+    if (confirm(`회의(ID: ${meetingId})를 정말 삭제하시겠습니까?`)) {        
+
+        deleteButton.disabled = true;
+        deleteButton.textContent = '삭제 중...';
+
         try {
-            // app.js의 apiClient 사용
-            await apiClient.delete(\`/admin/meetings/\${meetingId}\`); 
+            await apiClient.delete(`/admin/meetings/${meetingId}`); 
+
             alert('삭제되었습니다.');
-            loadAndRenderMeetings(); // 목록 새로고침
+            
+            loadAndRenderMeetings(); 
+
         } catch (error) {
             console.error('삭제 실패:', error);
-            alert('삭제에 실패했습니다.');
+            alert('삭제에 실패했습니다. (예: 404 - 찾을 수 없음)');
+
+        } finally {
+            if (deleteButton) {
+                 deleteButton.disabled = false;
+                 deleteButton.textContent = '삭제';
+            }
         }
-        */
-    }
+    }
 }

@@ -334,7 +334,8 @@
 }
 
 .page-header {
-    flex-shrink: 0;
+    /* flex-shrink: 0; */
+    margin-bottom: 24px;
 }
 
 /* 빈 상태 메시지 스타일 추가 */

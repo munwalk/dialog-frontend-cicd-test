@@ -752,11 +752,10 @@ function selectDate(dateStr, showOverlay = true) {
 
 // 이벤트 리스너 추가 함수 안되면 삭제해야함. (pih 수정.)
 async function toggleImportance(eventId, starBtn) {
-    const TOGGLE_URL = `${CALENDAR_BASE_URL}/${eventId}/importance`; // API 엔드포인트 가정
+    const TOGGLE_URL = `${CALENDAR_BASE_URL}/${eventId}/importance`;
 
     try {
         console.log(`🔄 중요도 토글 요청: ${eventId}`);
-        // 1. Optimistic UI 적용 (이미 이벤트 리스너에서 처리됨)
 
         const response = await fetch(TOGGLE_URL, {
             method: 'PATCH', // 또는 백엔드 API에 맞는 메서드 (POST/PUT 등)
@@ -769,7 +768,6 @@ async function toggleImportance(eventId, starBtn) {
         }
 
         console.log(`✅ 중요도 토글 성공: ${eventId}`);
-        // 성공 시 별도 처리 필요 없음 (Optimistic UI가 이미 적용됨)
 
     } catch (error) {
         console.error('❌ 중요도 토글 실패:', error);
