@@ -388,6 +388,7 @@ const forgotLink = document.querySelector('.forgot-link');
 const modal = document.getElementById('forgotPasswordModal');
 const modalClose = document.querySelector('.modal-close');
 const sendForgotBtn = document.getElementById('sendForgotBtn');
+const forgotSuccessAlert = document.getElementById('forgotSuccessAlert');
 const forgotMessage = document.getElementById('forgotMessage');
 
 // 1. "비밀번호를 잊으셨나요?" 클릭 시 모달 열기
@@ -415,36 +416,54 @@ if (modalClose && modal) {
 if (sendForgotBtn) {
     sendForgotBtn.addEventListener('click', function() {
         const email = document.getElementById('forgotEmail').value.trim();
+        forgotSuccessAlert.style.display = 'none';
+        forgotSuccessAlert.classList.remove('show');
+        forgotMessage.classList.remove('show', 'error-alert');
+        forgotSuccessAlert.textContent = '';
         forgotMessage.textContent = '';
-        forgotMessage.classList.remove('success-alert', 'error-alert');
 
         if (!email || !email.includes('@')) {
             forgotMessage.textContent = '이메일 주소를 올바르게 입력하세요.';
-            forgotMessage.classList.add('error-alert');
+            forgotMessage.classList.add('show', 'error-alert');
+            setTimeout(() => {
+                forgotMessage.classList.remove('show');
+                forgotMessage.textContent = '';
+            }, 3000);
             return;
         }
-
+        
         fetch('http://localhost:8080/api/auth/forgotPassword', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
         })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                forgotMessage.textContent = '메일이 발송되었습니다. 메일함을 확인하세요.';
-                forgotMessage.classList.remove('error-alert');
-                forgotMessage.classList.add('success-alert');
+        .then(res => 
+            res.json().then(data => ({
+                status: res.status,
+                body: data
+            }))
+        )
+        .then(({ status, body }) => {
+            if (status === 200 && body.success) {
+                forgotSuccessAlert.textContent = '메일이 발송되었습니다. 메일함을 확인하세요.';
+                forgotSuccessAlert.style.display = 'block';
+                forgotSuccessAlert.classList.add('show');
+                setTimeout(() => {
+                    forgotSuccessAlert.classList.remove('show');
+                    forgotSuccessAlert.style.display = 'none';
+                    forgotSuccessAlert.textContent = '';
+                }, 3000);
             } else {
-                forgotMessage.textContent = data.message || '발송 실패';
-                forgotMessage.classList.remove('success-alert');
-                forgotMessage.classList.add('error-alert');
+                // 커스텀 예외 핸들러에 위임 (context: 'forgot')
+                window.CustomExceptionHandlers.handleErrorResponse(status, body, 'forgot');
             }
         })
         .catch(() => {
-            forgotMessage.textContent = '서버 오류가 발생했습니다.';
-            forgotMessage.classList.remove('success-alert');
-            forgotMessage.classList.add('error-alert');
+            window.CustomExceptionHandlers.handleErrorResponse(
+                500, 
+                { message: '서버 내부 오류가 발생했습니다.' },
+                'forgot'
+            );
         });
     });
 }

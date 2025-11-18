@@ -364,6 +364,14 @@ window.CustomExceptionHandlers = {
         // signup 쪽이면 개별 필드 에러로, 아니면 공통 알림으로
         if (context === 'signup') {
             showSignupEmailError(errorData.message || "잘못된 요청입니다.");
+        } else if (context === 'forgot') {
+            const forgotMessage = document.getElementById('forgotMessage');
+            forgotMessage.textContent = errorData.message || "잘못된 요청입니다.";
+            forgotMessage.classList.add('show', 'error-alert');
+            setTimeout(() => {
+                forgotMessage.classList.remove('show');
+                forgotMessage.textContent = '';
+            }, 3000);
         } else {
             showAlert(errorData.message || "잘못된 요청입니다.", 'error', context);
         }
@@ -371,6 +379,14 @@ window.CustomExceptionHandlers = {
     handleUserNotFoundException(errorData, context) {
         if (context === 'signup') {
             showSignupEmailError(errorData.message || "존재하지 않는 아이디입니다.");
+        } else if (context === 'forgot') {
+            const forgotMessage = document.getElementById('forgotMessage');
+            forgotMessage.textContent = errorData.message || "존재하지 않는 사용자입니다.";
+            forgotMessage.classList.add('show', 'error-alert');
+            setTimeout(() => {
+                forgotMessage.classList.remove('show');
+                forgotMessage.textContent = '';
+            }, 3000);
         } else {
             showEmailError(errorData.message || "존재하지 않는 아이디입니다.");
         }
@@ -416,6 +432,8 @@ window.CustomExceptionHandlers = {
                     this.handleTermsNotAcceptedException(errorData, context);
                 } else if (errorData.error === "이미 존재하는 사용자") {
                     this.handleUserAlreadyExistsException(errorData, context);
+                } else if (errorData.error === "사용자 없음") {
+                    this.handleUserNotFoundException(errorData, context);
                 } else {
                     this.handleBadRequestException(errorData, context);
                 }
@@ -456,12 +474,30 @@ window.CustomExceptionHandlers = {
             case 500:
                 if (errorData.error === "소셜 사용자 정보 오류") {
                     this.handleSocialUserInfoException(errorData, context);
+                } else if (context === 'forgot') {
+                    const forgotMessage = document.getElementById('forgotMessage');
+                    forgotMessage.textContent = errorData.message || "서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+                    forgotMessage.classList.add('show', 'error-alert');
+                    setTimeout(() => {
+                        forgotMessage.classList.remove('show');
+                        forgotMessage.textContent = '';
+                    }, 3000);
                 } else {
                     showAlert("서버 내부 오류가 발생했습니다. 잠시 후 다시 시도해주세요.", 'error', context);
                 }
                 break;
             default:
-                showAlert(errorData.message || "알 수 없는 오류가 발생했습니다.", 'error', context);
+                if (context === 'forgot') {
+                    const forgotMessage = document.getElementById('forgotMessage');
+                    forgotMessage.textContent = errorData.message || "알 수 없는 오류가 발생했습니다.";
+                    forgotMessage.classList.add('show', 'error-alert');
+                    setTimeout(() => {
+                        forgotMessage.classList.remove('show');
+                        forgotMessage.textContent = '';
+                    }, 3000);
+                } else {
+                    showAlert(errorData.message || "알 수 없는 오류가 발생했습니다.", 'error', context);
+                }
                 break;
         }
     }
