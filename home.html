@@ -144,6 +144,28 @@
       </button>
     </main>
   </div>
+<div id="jobPersonaModal" class="job-modal-overlay">
+    <div class="job-modal-content">
+        <h3 class="job-modal-title">직무를 설정해보세요!</h3>
+        <p class="job-modal-desc">
+            나의 직무(백엔드, 프론트 등)를 설정하면<br>
+            AI 챗봇이 더 정확하고 전문적인 답변을 제공합니다.
+        </p>
+        
+        <div class="job-modal-actions">
+            <button onclick="closeJobModal(false)" class="job-modal-btn btn-secondary">
+                나중에
+            </button>
+            <button onclick="location.href='/settings.html'" class="job-modal-btn btn-primary">
+                지금 설정하기
+            </button>
+        </div>
+        
+        <div class="job-modal-footer">
+            <a href="#" onclick="closeJobModal(true)">다시 보지 않기</a>
+        </div>
+    </div>
+</div>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="static/js/app.js"></script>
   <script src="static/js/home.js"></script>

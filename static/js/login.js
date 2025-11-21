@@ -156,6 +156,10 @@ signinForm.addEventListener('submit', async function(e) {
         const data = await response.json();
 
         if (response.ok && data.success) {
+            if (data.needJobSetup) {
+                sessionStorage.setItem('showJobPersonaModal', 'true');
+            }
+            
             showAlert('로그인 성공!', 'success');
             setTimeout(() => {
                 window.location.href = '/home.html'; 

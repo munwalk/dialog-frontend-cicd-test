@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadCommonComponents();
     initHomeData();
     loadRecentMeetings();
+    checkAndShowJobModal();
 });
 
 // =========================================
@@ -476,3 +477,61 @@ function goToMeetings() { window.location.href = 'meetings.html'; }
 function goToCalendarWithDate(dateStr) {
     window.location.href = `calendar.html?date=${dateStr}`;
 }
+
+/* =========================================
+   직무 설정 유도 모달 로직
+========================================= */
+/* =========================================
+   직무 설정 유도 모달 로직
+========================================= */
+function checkAndShowJobModal() {
+    // 1. 소셜 로그인 감지: URL 파라미터 확인 (?needJobSetup=true)
+    const urlParams = new URLSearchParams(window.location.search);
+    const socialNeedSetup = urlParams.get('needJobSetup');
+
+    if (socialNeedSetup === 'true') {
+        sessionStorage.setItem('showJobPersonaModal', 'true');
+        
+        // URL 파라미터 청소 (지저분한 URL 정리)
+        const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+        window.history.replaceState({path: cleanUrl}, '', cleanUrl);
+    }
+
+    // 2. 모달 노출 조건 확인
+    // (일반 로그인은 login.js에서 sessionStorage에 저장했고, 소셜 로그인은 위에서 저장함)
+    const shouldShow = sessionStorage.getItem('showJobPersonaModal');
+    const hideForever = localStorage.getItem('hideJobGuideForever'); // '다신 보지 않기' 값
+
+    // 3. 모달 띄우기
+    if (shouldShow === 'true' && !hideForever) {
+        // 모달 요소 선택 (home.html에 해당 ID를 가진 모달이 있어야 함)
+        const modal = document.getElementById('jobPersonaModal');
+        if (modal) {
+            modal.style.display = 'flex'; // 모달 보이게 설정
+        }
+        
+        // 새로고침 시 계속 뜨지 않도록 세션 플래그 삭제 (원하는 정책에 따라 주석 처리 가능)
+        sessionStorage.removeItem('showJobPersonaModal');
+    }
+}
+
+// '다신 보지 않기' 및 닫기 처리 함수 (전역 window 객체에 등록)
+window.closeJobModal = function(neverShowAgain) {
+    const modal = document.getElementById('jobPersonaModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    if (neverShowAgain) {
+        localStorage.setItem('hideJobGuideForever', 'true');
+    }
+};
+// '다신 보지 않기' 및 닫기 처리 함수 (전역 window 객체에 등록)
+window.closeJobModal = function(neverShowAgain) {
+    const modal = document.getElementById('jobPersonaModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    if (neverShowAgain) {
+        localStorage.setItem('hideJobGuideForever', 'true');
+    }
+};
