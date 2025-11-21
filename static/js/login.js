@@ -251,7 +251,7 @@ function showTermsError(msg) {
     }, 2000);
 }
 /* ===============================
-    회원가입 폼 제출 처리 (디버깅 포함)
+    회원가입 폼 제출 처리
 ================================= */
 signupForm.addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -261,7 +261,12 @@ signupForm.addEventListener('submit', async function(e) {
     const email = document.getElementById('signup-email').value.trim();
     const password = document.getElementById('signup-password').value;
     const confirm = document.getElementById('signup-confirm').value;
-    const terms = document.getElementById('terms').checked;
+
+    const termsAgree = document.getElementById('termsAgree');
+    const privacyAgree = document.getElementById('privacyAgree');
+
+    const isTermsChecked = termsAgree ? termsAgree.checked : false;
+    const isPrivacyChecked = privacyAgree ? privacyAgree.checked : false;
 
     if (!name) {
         showSignupNameError('이름을 입력해주세요.');
@@ -296,8 +301,8 @@ signupForm.addEventListener('submit', async function(e) {
         showSignupConfirmError('비밀번호가 일치하지 않습니다.');
         return;
     }
-    if (!terms) {
-        showTermsError('이용약관에 동의해주세요.');
+    if (!isTermsChecked || !isPrivacyChecked) {
+        showTermsError('이용약관 및 개인정보처리방침에 모두 동의해주세요.');
         return;
     }
 
@@ -305,7 +310,7 @@ signupForm.addEventListener('submit', async function(e) {
         const response = await fetch('http://localhost:8080/api/auth/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, email, password, terms })
+            body: JSON.stringify({ name, email, password, terms: true })
         });
         const data = await response.json();
         if (response.ok && data.success) {
@@ -324,64 +329,133 @@ signupForm.addEventListener('submit', async function(e) {
     }
 });
 
-// 약관 전문 내용 (html로 정의/수정 가능)
-const termsContentHtml = `
-    <h3>이용약관 및 개인정보처리방침</h3>
+/* ===============================
+    약관 데이터 분리 (이용약관 / 개인정보처리방침)
+================================= */
+
+// 1. 이용약관 내용
+const termsServiceHtml = `
+    <h3>서비스 이용약관</h3>
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
 
     <h4>제 1 조 (목적)</h4>
-    <p>이 약관은 [DialoG]이 제공하는 모든 온라인 서비스(이하 'DialoG')의 이용과 관련하여 회원과 회사의 권리, 의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.</p>
+    <p>이 약관은 DialoG (이하 '회사')이 제공하는 모든 온라인 서비스(이하 '서비스')의 이용과 관련하여 회사와 회원의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.</p>
 
     <h4>제 2 조 (용어의 정의)</h4>
-    <p>이 약관에서 사용하는 용어의 정의는 다음과 같습니다.<br>
-    1. '회원'은 본 약관에 동의하여 회사에 개인정보를 제공하고 이용계약을 체결한 자를 의미합니다.<br>
-    2. '서비스'는 회사가 개발·운영하는 온라인 서비스 및 그에 부수된 모든 기능을 말합니다.</p>
-
-    <h4>제 3 조 (약관의 게시 및 개정)</h4>
-    <p>회사는 본 약관을 서비스의 초기 화면 또는 기타 회원이 쉽게 확인할 수 있는 위치에 게시하며, 관할 법령에 따라 추가·수정·개정할 수 있습니다.</p>
-
-    <h4>제 4 조 (회원가입 및 탈퇴)</h4>
-    <p>회원 가입은 본 약관·개인정보처리방침에 동의하고, 홈페이지의 신청서를 작성해 완료함으로써 성립됩니다.<br>
-    회원은 언제든지 직접 탈퇴를 신청할 수 있으며, 회사는 관련 법령 및 내부 규정에 따라 탈퇴 처리를 진행합니다.</p>
-
-    <h4>제 5 조 (회원의 의무)</h4>
-    <p>회원은 서비스 이용 시,
-    <ul>
-    <li>타인의 정보를 도용, 허위 등록 금지</li>
-    <li>지적재산권·법령 등 준수</li>
-    <li>정상적 운영 방해(해킹, 자동수집 등) 행위 금지</li>
-    </ul>
-    회사는 이에 위반 시 이용 정지, 해지 등 필요한 조치를 할 수 있습니다.</p>
-
-    <h4>제 6 조 (서비스 제공 및 중단)</h4>
-    <p>회사는 서비스 제공에 최선을 다하지만, 시스템 점검/교체/고장/통신두절 등 불가피한 사유로 일시 중단할 수 있습니다.<br>
-    회사 사전 공지 또는 사후 알림을 통해 회원에게 알립니다.</p>
-
-    <h4>제 7 조 (개인정보의 처리 및 보호)</h4>
-    <p>회사는 회원의 개인정보를 서비스 제공·고지·통지 등 필요한 용도에만 수집/이용하며, 관련 법령에 따라 관리·보관·파기합니다.<br>
-    자세한 내용은 <b>개인정보처리방침</b>에 따릅니다.</p>
-
-    <h4>개인정보처리방침</h4>
     <p>
-    <b>1. 개인정보 수집 및 이용목적</b>: 회원가입, 로그인, 서비스 제공, 문의/상담 처리 등.<br>
-    <b>2. 수집항목</b>: 이름, 이메일주소, 비밀번호<br>
-    <b>3. 보관 및 파기</b>: 회원 탈퇴 시 또는 관련 법령에 따른 보존기간 경과 후 즉시 파기함.<br>
-    <b>4. 제3자 제공</b>: 회원 동의 없이는 외부에 제공하지 않음(법령 등 예외사유 제외).<br>
-    <b>5. 개인정보보호 책임자 및 문의</b>: [DialoG, DialoG@dialog.com]<br>
+        1. '회원'이라 함은 본 약관에 동의하고 개인정보를 제공하여 이용계약을 체결한 자를 말합니다.<br>
+        2. '서비스'라 함은 단말기(PC, 모바일 등)와 상관없이 회원이 이용할 수 있는 DialoG 및 관련 제반 서비스를 말합니다.
     </p>
 
-    <p>기타 세부사항은 서비스 공지, 약관 개정 시 추가로 고지합니다.</p>
+    <h4>제 3 조 (약관의 게시 및 개정)</h4>
+    <p>회사는 본 약관을 서비스 초기 화면에 게시하며, 관련 법령을 위배하지 않는 범위 내에서 약관을 개정할 수 있습니다. 개정 시 적용일자 7일 전부터 공지합니다.</p>
+
+    <h4>제 4 조 (회원가입 및 탈퇴)</h4>
+    <p>
+        1. 이용 계약은 회원이 약관 내용에 동의하고 가입 신청을 함으로써 체결됩니다.<br>
+        2. <b>본 서비스는 만 14세 이상만 이용 가능하며, 만 14세 미만 아동의 가입은 제한될 수 있습니다.</b><br>
+        3. 회원은 언제든지 설정 메뉴 등을 통해 이용 계약 해지(탈퇴)를 신청할 수 있으며, 회사는 관련 법령이 정하는 바에 따라 이를 즉시 처리합니다.
+    </p>
+
+    <h4>제 5 조 (회원의 의무)</h4>
+    <p>회원은 다음 행위를 하여서는 안 됩니다.</p>
+    <ul>
+        <li>신청 또는 변경 시 허위 내용의 등록</li>
+        <li>타인의 정보 도용</li>
+        <li>회사의 지적재산권 침해 또는 업무 방해 (해킹, 매크로 사용 등)</li>
+        <li>기타 관련 법령에 위배되는 행위</li>
+    </ul>
+
+    <h4>제 6 조 (서비스 제공 및 변경)</h4>
+    <p>
+        회사는 연중무휴 1일 24시간 서비스 제공을 원칙으로 합니다.<br>
+        단, 시스템 점검, 교체, 고장, 통신두절 등의 사유가 발생한 경우 서비스의 제공을 일시적으로 중단할 수 있습니다.
+    </p>
+
+    <h4>제 7 조 (면책조항)</h4>
+    <p>
+        1. 회사는 천재지변 또는 이에 준하는 불가항력으로 인하여 서비스를 제공할 수 없는 경우에는 서비스 제공에 관한 책임이 면제됩니다.<br>
+        2. 회사는 회원의 귀책사유로 인한 서비스 이용의 장애에 대하여는 책임을 지지 않습니다.<br>
+        3. 회사는 무료로 제공되는 서비스 이용과 관련하여 관련 법령에 특별한 규정이 없는 한 책임을 지지 않습니다.
+    </p>
+
+    <h4>제 8 조 (준거법 및 재판관할)</h4>
+    <p>본 약관과 관련하여 발생한 분쟁에 대해서는 대한민국 법을 준거법으로 하며, 분쟁에 관한 소송은 서울중앙지방법원을 관할 법원으로 합니다.</p>
+`;
+
+// 2. 개인정보처리방침 내용
+const privacyPolicyHtml = `
+    <h3>개인정보처리방침</h3>
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+
+    <p>
+        <b>1. 개인정보 수집 및 이용목적</b><br>
+        회사는 회원 가입 의사 확인, 회원 식별/인증, 서비스 제공 및 유지·관리를 목적으로 개인정보를 처리합니다.
+    </p>
+
+    <p>
+        <b>2. 수집하는 개인정보의 항목</b><br>
+        - 필수항목: 아이디(이메일), 비밀번호, 이름, 닉네임<br>
+        - 소셜 로그인 시: 해당 SNS(Google, Kakao 등)에서 제공하는 식별자 및 프로필 정보<br>
+        - 자동수집항목: 서비스 이용기록, 접속 로그, 쿠키, 접속 IP 정보
+    </p>
+
+    <p>
+        <b>3. 개인정보의 보유 및 이용기간</b><br>
+        회사는 원칙적으로 개인정보 수집 및 이용목적이 달성된 후에는 해당 정보를 지체 없이 파기합니다. 단, 다음의 정보는 아래의 이유로 명시한 기간 동안 보존합니다.<br>
+        - 회원 탈퇴 시: 분쟁 해결 및 민원 처리를 위해 30일간 보관 후 파기<br>
+        - 관계 법령 위반에 따른 수사·조사 등이 진행 중인 경우: 해당 종료 시까지
+    </p>
+
+    <p>
+        <b>4. 개인정보의 파기절차 및 방법</b><br>
+        전자적 파일 형태의 정보는 기록을 재생할 수 없는 기술적 방법을 사용하여 삭제합니다.
+    </p>
+
+    <p>
+        <b>5. 개인정보의 제3자 제공</b><br>
+        회사는 정보주체의 동의, 법률의 특별한 규정 등 관련 법령에 해당하는 경우를 제외하고는 개인정보를 제3자에게 제공하지 않습니다.
+    </p>
+    
+    <p>
+        <b>6. 이용자 및 법정대리인의 권리와 행사방법</b><br>
+        이용자는 언제든지 자신의 개인정보를 조회하거나 수정할 수 있으며, 쿠키 저장을 거부할 수 있습니다.<br>
+        (설정 방법 예시: 웹브라우저 상단의 도구 > 인터넷 옵션 > 개인정보)
+    </p>
+
+    <p>
+        <b>7. 개인정보 보호책임자</b><br>
+        - 이름: 개인정보 관리 담당자<br>
+        - 연락처: DialoG@dialog.com
+    </p>
+
+    <p style="color: #888; font-size: 0.9em; margin-top: 20px;">
+        기타 세부사항은 서비스 공지사항을 통해 추가로 고지합니다.
+    </p>
 `;
 
 // DOM 요소 선택
 const showTermsLink = document.getElementById('showTermsLink');
-const termsModal = document.getElementById('termsModal');
 const closeTermsModal = document.getElementById('closeTermsModal');
+const termsModal = document.getElementById('termsModal');
 const termsContent = document.getElementById('termsContent');
 
-// "내용보기" 클릭 시 모달 오픈
-if (showTermsLink && termsModal && termsContent) {
-    showTermsLink.addEventListener('click', function() {
-        termsContent.innerHTML = termsContentHtml;
+// 이용약관 보기 버튼
+const btnShowTerms = document.getElementById('btnShowTerms');
+if (btnShowTerms && termsModal && termsContent) {
+    btnShowTerms.addEventListener('click', function(e) {
+        e.preventDefault(); // 라벨 클릭 방지
+        termsContent.innerHTML = termsServiceHtml; // 이용약관 HTML 넣기
+        termsModal.style.display = 'block';
+    });
+}
+
+// 개인정보처리방침 보기 버튼
+const btnShowPrivacy = document.getElementById('btnShowPrivacy');
+if (btnShowPrivacy && termsModal && termsContent) {
+    btnShowPrivacy.addEventListener('click', function(e) {
+        e.preventDefault(); // 라벨 클릭 방지
+        termsContent.innerHTML = privacyPolicyHtml; // 개인정보 HTML 넣기
         termsModal.style.display = 'block';
     });
 }
