@@ -34,33 +34,33 @@ jobs:
           docker build -t dialog-frontend-test .
 
   # CD: 배포 (main 브랜치만)
-cd:
-  needs: ci
-  runs-on: ubuntu-latest
-  if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-  
-  steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+  cd:
+    needs: ci
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Build and Push Docker Image
-      run: |
-        docker build -t munwalk/dialog-frontend:latest .
-        docker push munwalk/dialog-frontend:latest
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t munwalk/dialog-frontend:latest .
+          docker push munwalk/dialog-frontend:latest
 
-    - name: Deploy to EC2
-      uses: appleboy/ssh-action@v1.0.0
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ubuntu
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          cd /opt/dialog
-          docker pull munwalk/dialog-frontend:latest
-          docker-compose up -d frontend
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /opt/dialog
+            docker pull munwalk/dialog-frontend:latest
+            docker-compose up -d frontend
