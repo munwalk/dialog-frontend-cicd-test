@@ -307,9 +307,6 @@ design-assets/
 *private*
 *confidential*
 
-DockerFile
-nginx.conf
-
 # 패턴 예외 처리
 !static/css/resetpassword.css
 !static/js/resetpassword.js

@@ -5,6 +5,7 @@ let currentUser = null;         // (API) 로그인한 사용자 정보
 let calendarEvents = [];      // (API) 백엔드에서 불러온 이벤트 원본 배열
 let currentYearMonth;         // (API) 현재 캘린더가 표시하는 년/월 (Date 객체)
 let selectedDate;             // (API) YYYY-MM-DD 형식의 문자열
+let starListenerAttached = false; // 별표 이벤트 리스너 중복 방지
 
 // API URL
 const CALENDAR_BASE_URL = 'http://localhost:8080/api/calendar';
@@ -752,83 +753,191 @@ function selectDate(dateStr, showOverlay = true) {
     }
 }
 
-// 이벤트 리스너 추가 함수 안되면 삭제해야함. (pih 수정.)
+// // 이벤트 리스너 추가 함수 안되면 삭제해야함. (pih 수정.)
+// async function toggleImportance(eventId, starBtn) {
+//     const TOGGLE_URL = `${CALENDAR_BASE_URL}/events/${eventId}/importance`;
+//     //const TOGGLE_URL = `${CALENDAR_BASE_URL}/${eventId}/importance`;
+
+//     try {
+//         console.log(`🔄 중요도 토글 요청: ${eventId}`);
+
+//         const response = await fetch(TOGGLE_URL, {
+//             method: 'PATCH', // 또는 백엔드 API에 맞는 메서드 (POST/PUT 등)
+//             credentials: 'include',
+//              headers: { 'Content-Type': 'application/json' }
+//         });
+
+//         if (!response.ok) {
+//             throw new Error(`HTTP error! status: ${response.status}`);
+//         }
+
+//         console.log(` 중요도 토글 성공: ${eventId}`);
+
+//     } catch (error) {
+//         console.error(' 중요도 토글 실패:', error);
+//         showAlert('중요도 변경에 실패했습니다.', 'error');
+        
+//         // 실패 시 UI 롤백
+//         starBtn.classList.toggle('active');
+//         const svg = starBtn.querySelector('svg');
+//         if (starBtn.classList.contains('active')) {
+//              svg.setAttribute('fill', 'currentColor');
+//         } else {
+//              svg.setAttribute('fill', 'none');
+//         }
+//     }
+// }
+
 async function toggleImportance(eventId, starBtn) {
-    const TOGGLE_URL = `${CALENDAR_BASE_URL}/${eventId}/importance`;
+    // [수정] 중복 클릭 방지: 이미 처리 중이면 무시
+    if (starBtn.disabled) return;
+    
+    const TOGGLE_URL = `${CALENDAR_BASE_URL}/events/${eventId}/importance`;
 
     try {
+        // [수정] 버튼 비활성화 (중복 클릭 방지)
+        starBtn.disabled = true;
+        starBtn.style.opacity = '0.5';
+        
         console.log(`🔄 중요도 토글 요청: ${eventId}`);
 
         const response = await fetch(TOGGLE_URL, {
-            method: 'PATCH', // 또는 백엔드 API에 맞는 메서드 (POST/PUT 등)
+            method: 'PATCH',
             credentials: 'include',
-             headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' }
         });
 
+        // [디버깅] 응답 상태 확인
+        console.log('📡 응답 상태:', response.status);
+        console.log('📡 Content-Type:', response.headers.get('content-type'));
+        
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        console.log(` 중요도 토글 성공: ${eventId}`);
+        // [수정] 응답에 JSON이 있는지 체크
+        let newImportantState;
+        const contentType = response.headers.get('content-type');
+        
+        if (response.status === 204) {
+            console.log('✅ 204 No Content - 로컬 상태 토글');
+            const event = calendarEvents.find(e => e.googleEventId === eventId || e.id === eventId);
+            if (event) {
+                event.isImportant = !event.isImportant;
+                newImportantState = event.isImportant;
+            } else {
+                newImportantState = !starBtn.classList.contains('active');
+            }
+        } else if (contentType && contentType.includes('application/json')) {
+            console.log('✅ JSON 응답 수신');
+            const result = await response.json();
+            newImportantState = result.isImportant;
+            
+            const event = calendarEvents.find(e => e.googleEventId === eventId || e.id === eventId);
+            if (event) {
+                event.isImportant = newImportantState;
+            }
+        } else {
+            // [추가] 텍스트 응답도 시도
+            const textResponse = await response.text();
+            console.log('📡 응답 본문:', textResponse);
+            
+            // 빈 응답이면 성공으로 간주하고 토글
+            if (!textResponse || textResponse.trim() === '') {
+                console.log('✅ 빈 응답 - 로컬 상태 토글');
+                const event = calendarEvents.find(e => e.googleEventId === eventId || e.id === eventId);
+                if (event) {
+                    event.isImportant = !event.isImportant;
+                    newImportantState = event.isImportant;
+                } else {
+                    newImportantState = !starBtn.classList.contains('active');
+                }
+            } else {
+                throw new Error(`서버 응답 형식이 올바르지 않습니다: ${textResponse}`);
+            }
+        }
+
+        console.log(`✅ 중요도 토글 성공: ${eventId}, 새 상태: ${newImportantState}`);
+
+        // UI 즉시 업데이트
+        starBtn.classList.toggle('active', newImportantState);
+        const svg = starBtn.querySelector('svg');
+        svg.setAttribute('fill', newImportantState ? 'currentColor' : 'none');
+
+        console.log('📌 업데이트 완료 - isImportant:', newImportantState);
+        
+        // [추가] 서버에서 최신 데이터 다시 불러오기
+        await renderCalendar();
+        console.log('🔄 캘린더 새로고침 완료');
 
     } catch (error) {
-        console.error(' 중요도 토글 실패:', error);
+        console.error('❌ 중요도 토글 실패:', error);
         showAlert('중요도 변경에 실패했습니다.', 'error');
         
-        // 실패 시 UI 롤백
+        // [수정] 실패 시 UI 롤백
         starBtn.classList.toggle('active');
         const svg = starBtn.querySelector('svg');
         if (starBtn.classList.contains('active')) {
-             svg.setAttribute('fill', 'currentColor');
+            svg.setAttribute('fill', 'currentColor');
         } else {
-             svg.setAttribute('fill', 'none');
+            svg.setAttribute('fill', 'none');
         }
+    } finally {
+        // [수정] 항상 버튼 다시 활성화
+        starBtn.disabled = false;
+        starBtn.style.opacity = '1';
     }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    // 챗봇 초기화 (전역 함수 사용)
+    await initializeChatbot();
+    
+    // 사이드바 로드
+    fetch("components/sidebar.html")
 
-    // 1. [병합] 별표 버튼 클릭 리스너 (이벤트 위임)
-    document.addEventListener('click', function(e) {
-        const starBtn = e.target.closest('.star-btn');
-        if (starBtn) {
-            const meetingId = starBtn.getAttribute('data-meeting-id');
+    // // 1. [병합] 별표 버튼 클릭 리스너 (이벤트 위임)
+    // document.addEventListener('click', function(e) {
+    //     const starBtn = e.target.closest('.star-btn');
+    //     if (starBtn) {
+    //         const meetingId = starBtn.getAttribute('data-meeting-id');
 
-            starBtn.classList.toggle('active');
-            const svg = starBtn.querySelector('svg');
-            if (starBtn.classList.contains('active')) {
-                svg.setAttribute('fill', 'currentColor');
-            } else {
-                svg.setAttribute('fill', 'none');
-            }
+    //         starBtn.classList.toggle('active');
+    //         const svg = starBtn.querySelector('svg');
+    //         if (starBtn.classList.contains('active')) {
+    //             svg.setAttribute('fill', 'currentColor');
+    //         } else {
+    //             svg.setAttribute('fill', 'none');
+    //         }
             
-            console.log(`⭐ 별표 클릭됨! ID: ${meetingId}`);
-            toggleImportance(meetingId, starBtn);
-        }
-    });
+    //         console.log(`⭐ 별표 클릭됨! ID: ${meetingId}`);
+    //         toggleImportance(meetingId, starBtn);
+    //     }
+    // });
 
-    // 2. 챗봇 로드 (병렬 처리)
-    fetch("components/chatbot.html")
-        .then(res => res.ok ? res.text() : Promise.reject('Chatbot HTML not found'))
-        .then(html => {
-            const container = document.getElementById("chatbot-container");
-            if (container) {
-                container.innerHTML = html;
-                
-                const closeBtn = container.querySelector(".close-chat-btn");
-                const sendBtn = container.querySelector(".send-btn");
-                const chatInput = container.querySelector("#chatInput");
-                const floatingBtn = document.getElementById("floatingChatBtn");
+    // [수정] 별표 클릭 리스너 - 중복 방지
+    if (!starListenerAttached) {
+        document.addEventListener('click', function(e) {
+            const starBtn = e.target.closest('.star-btn');
+            if (starBtn) {
+                // 이미 처리 중이면 무시
+                if (starBtn.disabled) {
+                    console.log('⚠️ 별표 처리 중... 대기하세요');
+                    return;
+                }
 
-                if (closeBtn && typeof closeChat === 'function') closeBtn.addEventListener("click", closeChat);
-                if (sendBtn && typeof sendMessage === 'function') sendBtn.addEventListener("click", sendMessage);
-                if (chatInput && typeof handleChatEnter === 'function') chatInput.addEventListener("keypress", handleChatEnter);
-                if (floatingBtn && typeof openChat === 'function') floatingBtn.addEventListener("click", openChat);
+                const meetingId = starBtn.getAttribute('data-meeting-id');
+                console.log(`⭐ 별표 클릭! ID: ${meetingId}`);
+
+                // API 호출 (UI는 성공 후 자동 업데이트됨)
+                toggleImportance(meetingId, starBtn);
             }
-        })
-        .catch(error => console.error('챗봇 로드 실패:', error));
+        });
+        starListenerAttached = true;
+        console.log('✅ 별표 이벤트 리스너 등록 완료');
+    }
 
-    // 3. 사이드바 로드 및 메인 로직 시작 (순차 처리)
+    // 2. 사이드바 로드 및 메인 로직 시작 (순차 처리)
     fetch("components/sidebar.html")
         .then(res => res.ok ? res.text() : Promise.reject('Sidebar HTML not found'))
         .then(html => {

@@ -1,49 +1,31 @@
 let cachedUsers = [];
 /* ===============================
-   Chatbot & Sidebar Fetch
+   Chatbot & Sidebar Fetch
 =================================*/
-document.addEventListener("DOMContentLoaded", () => {
-    // 챗봇 로드
-    fetch("components/chatbot.html")
-        .then(res => res.text())
-        .then(html => {
-            const container = document.getElementById("chatbot-container");
-            if (container) { // null 체크 추가
-                container.innerHTML = html;
+document.addEventListener("DOMContentLoaded", async () => {
+    // 챗봇 초기화 (전역 함수 사용)
+    await initializeChatbot();
     
-                const closeBtn = container.querySelector(".close-chat-btn");
-                const sendBtn = container.querySelector(".send-btn");
-                const chatInput = container.querySelector("#chatInput");
-                const floatingBtn = document.getElementById("floatingChatBtn");
-    
-                if (closeBtn) closeBtn.addEventListener("click", closeChat);
-                if (sendBtn) sendBtn.addEventListener("click", sendMessage);
-                if (chatInput) chatInput.addEventListener("keypress", handleChatEnter);
-                if (floatingBtn) floatingBtn.addEventListener("click", openChat);
-            }
-        });
-    
-    // 사이드바 로드
-    fetch("components/sidebar.html")
-        .then(res => res.text())
-        .then(async html => {
-            const sidebar = document.getElementById("sidebar-container");
-            sidebar.innerHTML = html;
-            await loadCurrentUser(); // app.js의 함수
-            const currentPage = window.location.pathname.split("/").pop();
-            const navItems = sidebar.querySelectorAll(".nav-menu a");
-            navItems.forEach(item => {
-                const linkPath = item.getAttribute("href");
-                if (linkPath === currentPage) {
-                    item.classList.add("active");
-                } else {
-                    item.classList.remove("active");
-                }
-            });
-        })
-        .catch(error => {
-            console.error('사이드바 로드 실패:', error);
-        });
+    // 사이드바 로드
+    fetch("components/sidebar.html")
+        .then(res => res.text())
+        .then(async html => {
+            const sidebar = document.getElementById("sidebar-container");
+            await loadCurrentUser(); // app.js의 함수
+            const currentPage = window.location.pathname.split("/").pop();
+            const navItems = sidebar.querySelectorAll(".nav-menu a");
+            navItems.forEach(item => {
+                const linkPath = item.getAttribute("href");
+                if (linkPath === currentPage) {
+                    item.classList.add("active");
+                } else {
+                    item.classList.remove("active");
+                }
+            });
+        })
+        .catch(error => {
+            console.error('사이드바 로드 실패:', error);
+        });
 
     loadUsers();
 });
@@ -53,41 +35,41 @@ function addUser() {
 }
 
 async function loadUsers() {
-  try {
-    const response = await apiClient.get('/admin/users');
-    const users = response.data;
+  try {
+    const response = await apiClient.get('/admin/users');
+    const users = response.data;
 
-    cachedUsers = users; 
-    
-    const tbody = document.querySelector('.users-table tbody');
-    if (!tbody) {
-        console.error("테이블 <tbody>를 찾을 수 없습니다.");
-        return;
-    }
-    tbody.innerHTML = ''; 
+    cachedUsers = users;
 
-    if (!users || users.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">등록된 사용자가 없습니다.</td></tr>';
-        return;
-    }
+    const tbody = document.querySelector('.users-table tbody');
+    if (!tbody) {
+        console.error("테이블 <tbody>를 찾을 수 없습니다.");
+        return;
+    }
+    tbody.innerHTML = '';
 
-    users.forEach(user => {
-      const tr = document.createElement('tr');
-      
-      // ✅ 디버깅: 콘솔에 user 객체 출력
-      console.log('User data:', user);
-      
+    if (!users || users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">등록된 사용자가 없습니다.</td></tr>';
+        return;
+    }
+
+    users.forEach(user => {
+      const tr = document.createElement('tr');
+
+      // ✅ 디버깅: 콘솔에 user 객체 출력
+      console.log('User data:', user);
+
 
       tr.innerHTML = `<td>${user.name || '이름 없음'}</td><td>${user.email || '-'}</td><td><span class="role-badge ${user.role ? user.role.toLowerCase() : 'user'}">${user.role || 'USER'}</span></td><td><select class="user-status ${user.active ? 'active' : 'deactivated'}" onchange="updateUserStatus(this, '${user.id}', this.value)"><option value="true" ${user.active ? 'selected' : ''}>활성</option><option value="false" ${!user.active ? 'selected' : ''}>비활성</option></select></td><td>${user.regDate ? new Date(user.regDate).toLocaleDateString('ko-KR') : '-'}</td><td><div class="user-actions"><button class="small-action-btn" onclick="editUser('${user.id}')">수정</button><button class="small-action-btn danger" onclick="deleteUser('${user.id}')">삭제</button></div></td>`;
-      tbody.appendChild(tr);
-    });
-  } catch (error) {
-    console.error('유저 목록 로드 실패:', error);
-    const tbody = document.querySelector('.users-table tbody');
-    if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">목록을 불러오는 데 실패했습니다.</td></tr>';
-    }
-  }
+      tbody.appendChild(tr);
+    });
+  } catch (error) {
+    console.error('유저 목록 로드 실패:', error);
+    const tbody = document.querySelector('.users-table tbody');
+    if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">목록을 불러오는 데 실패했습니다.</td></tr>';
+    }
+  }
 }
 
 function editUser(userId) {
@@ -102,7 +84,7 @@ function editUser(userId) {
     // (AdminResponse에 job, position이 포함되어 있다고 가정)
     document.getElementById('modalUserId').value = user.id;
     document.getElementById('modalUserName').value = user.name;
-    document.getElementById('modalUserJob').value = user.job; 
+    document.getElementById('modalUserJob').value = user.job;
     document.getElementById('modalUserPosition').value = user.position;
 
     // 3. 모달 띄우기
@@ -130,7 +112,7 @@ async function saveUserSettings() {
     try {
         // 2. 백엔드 컨트롤러에 만든 API 경로로 PUT 요청
         await apiClient.put(`/admin/users/settings/${userId}`, updateDto);
-        
+
         showAlert('사용자 정보가 성공적으로 수정되었습니다.');
         closeEditModal(); // 모달 닫기
         loadUsers();      // 목록 새로고침
@@ -151,8 +133,8 @@ async function deleteUser(userId) {
         try {
             await apiClient.delete(`/admin/users/${userId}`);
             // 2. 성공 알림 (showAlert)
-            showAlert('사용자가 삭제되었습니다.');       
-            loadUsers(); 
+            showAlert('사용자가 삭제되었습니다.');
+            loadUsers();
         } catch (error) {
             console.error('사용자 삭제 실패:', error);
             // 3. 실패 알림 (showAlert)
@@ -172,8 +154,8 @@ async function deleteUser(userId) {
  * @param {string} newStatusValue - 새로운 상태 값 ("true" 또는 "false")
  */
 async function updateUserStatus(selectElement, userId, newStatusValue) {
-    
-    const isActive = (newStatusValue === 'true'); 
+
+    const isActive = (newStatusValue === 'true');
 
     // 1. (중요) 캐시된 데이터에서 이 사용자의 job, position을 찾습니다.
     //    @NotNull 필드를 채워야 하기 때문입니다.
@@ -199,7 +181,7 @@ async function updateUserStatus(selectElement, userId, newStatusValue) {
             position: user.position, // 캐시에서 가져온 기존 값
             active: isActive         // ⭐️새롭게 변경된 상태 값
         };
-        await apiClient.put(`/admin/users/settings/${userId}`, updateDto);        
+        await apiClient.put(`/admin/users/settings/${userId}`, updateDto);
         // 5. API가 성공했으므로, JS 캐시에도 상태를 반영합니다.
         user.active = isActive;
 

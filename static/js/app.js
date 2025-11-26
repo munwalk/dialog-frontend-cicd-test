@@ -1,14 +1,4 @@
 // ============================================================
-// 챗봇 CSS/JS 동적 로드
-// ============================================================
-
-// 챗봇 CSS 로드
-const chatbotCSS = document.createElement('link');
-chatbotCSS.rel = 'stylesheet';
-chatbotCSS.href = 'static/css/chatbot.css';
-document.head.appendChild(chatbotCSS);
-
-// ============================================================
 // API URL 설정
 // ============================================================
 
@@ -50,20 +40,34 @@ function changePage(pageName) {
 
 function openChat() {
     const chat = document.getElementById("chatBot");
-    if (!chat) return;
     
-    // [추가] display 복구 (flex로 시도)
-    chat.style.display = 'flex';
-    
-    // [추가] 챗봇 열 때 초기화
-    if (typeof initChatbot === 'function') {
-        initChatbot();
+    if (!chat) {
+        console.error('❌ #chatBot 요소를 찾을 수 없습니다!');
+        console.log('💡 챗봇 HTML이 아직 로드되지 않았을 수 있습니다.');
+        return;
     }
     
+    console.log('✅ 챗봇 열기 시작');
+    
+    // display 복구
+    chat.style.display = 'flex';
     chat.classList.add("open");
+    
+    // 플로팅 버튼 숨기기
     const floatingBtn = document.getElementById("floatingChatBtn");
     if (floatingBtn) floatingBtn.classList.add("hidden");
     document.body.classList.add("chat-open");
+    
+    // ========== 챗봇 초기화 (지연 실행) ==========
+    setTimeout(() => {
+        const chatMessages = document.getElementById('chatMessages');
+        if (chatMessages && typeof initChatbot === 'function') {
+            console.log('✅ 챗봇 초기화 실행');
+            initChatbot();
+        } else {
+            console.warn('⚠️ chatMessages 또는 initChatbot 함수를 찾을 수 없습니다.');
+        }
+    }, 100);
 }
 
 function closeChat() {
@@ -126,6 +130,10 @@ function showPage(pageName) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+
+    // ========== 챗봇 초기화 ==========
+    await window.initializeChatbot();
+        
     const navItems = document.querySelectorAll('.nav-item');
     navItems.forEach(item => {
         item.addEventListener('click', (e) => {
@@ -606,21 +614,91 @@ async function logout() {
 }
 
 // ============================================================
-// 챗봇 JS 로드 (맨 마지막에 실행)
+// 챗봇 HTML 로드 함수
 // ============================================================
 
-const chatbotJS = document.createElement('script');
-chatbotJS.src = 'static/js/chatbot.js';
-chatbotJS.onload = function() {
-    // [추가] chatbot.js 로드 완료 후 초기화
-    setTimeout(() => {
-        if (typeof initChatbot === 'function' && document.getElementById('chatMessages')) {
-            initChatbot();
+async function loadChatbotHTML() {
+    try {
+        const response = await fetch('components/chatbot.html');
+        if (!response.ok) {
+            throw new Error(`챗봇 HTML 로드 실패: ${response.status}`);
         }
-    }, 100);
-};
-document.body.appendChild(chatbotJS);
+        
+        const html = await response.text();
+        
+        // #chatbot-container에 주입
+        const container = document.getElementById('chatbot-container');
+        if (container) {
+            container.innerHTML = html;
+            console.log('✅ 챗봇 HTML 로드 완료');
+            return true;
+        } else {
+            console.error('❌ #chatbot-container를 찾을 수 없습니다!');
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ 챗봇 HTML 로드 오류:', error);
+        return false;
+    }
+}
 
+// ============================================================
+// 챗봇 JS 로드 함수 (중복 방지)
+// ============================================================
+function loadChatbotJS() {
+    if (document.querySelector('script[src="static/js/chatbot.js"]')) {
+        console.log('ℹ️ 챗봇 JS 이미 로드됨');
+        attachChatbotEvents(); // 이벤트 재부착
+        return;
+    }
+    
+    const script = document.createElement('script');
+    script.src = 'static/js/chatbot.js';
+    script.onload = () => {
+        console.log('✅ 챗봇 JS 로드 완료');
+        attachChatbotEvents(); // 로드 완료 후 이벤트 부착
+    };
+    script.onerror = () => {
+        console.error('❌ 챗봇 JS 로드 실패');
+    };
+    document.body.appendChild(script);
+}
+
+// ============================================================
+// 전역 챗봇 초기화 함수 (중복 방지)
+// ============================================================
+window.initializeChatbot = async function() {
+    // 이미 초기화되었는지 체크
+    if (window._chatbotInitialized) {
+        console.log('ℹ️ 챗봇 이미 초기화됨');
+        return;
+    }
+    
+    const chatbotContainer = document.getElementById('chatbot-container');
+    
+    if (!chatbotContainer) {
+        console.log('ℹ️ 챗봇 컨테이너 없음');
+        return;
+    }
+
+    // CSS 중복 체크
+    if (!document.querySelector('link[href="static/css/chatbot.css"]')) {
+        const chatbotCSS = document.createElement('link');
+        chatbotCSS.rel = 'stylesheet';
+        chatbotCSS.href = 'static/css/chatbot.css';
+        document.head.appendChild(chatbotCSS);
+        console.log('✅ chatbot.css 로드');
+    }
+
+    const htmlLoaded = await loadChatbotHTML();
+    
+    if (htmlLoaded) {
+        loadChatbotJS();
+        window._chatbotInitialized = true;
+    }
+};
+
+// ============================================================
 /* =========================================
    ✅ 전역 알림(Toast) 함수 추가
    어디서든 showAlert('메시지', 'error') 형태로 호출 가능
@@ -794,3 +872,44 @@ window.showConfirm = function(message) {
         // modalOverlay.onclick = (e) => { if(e.target === modalOverlay) cleanup(false); };
     });
 };
+
+// 챗봇 이벤트 부착 함수
+function attachChatbotEvents() {
+    const floatingBtn = document.getElementById('floatingChatBtn');
+    
+    if (floatingBtn) {
+        // 기존 이벤트 제거 (중복 방지)
+        floatingBtn.replaceWith(floatingBtn.cloneNode(true));
+        
+        // 새로 가져온 버튼에 이벤트 부착
+        const newBtn = document.getElementById('floatingChatBtn');
+        newBtn.addEventListener('click', openChat);
+        
+        console.log('✅ 챗봇 버튼 이벤트 부착 완료');
+    } else {
+        console.warn('⚠️ floatingChatBtn 찾을 수 없음');
+    }
+}
+
+// 챗봇 열기
+function openChat() {
+    console.log('✅ 챗봇 열기 시작');
+    const chatBot = document.getElementById('chatBot');
+    const floatingBtn = document.getElementById('floatingChatBtn');
+    
+    if (!chatBot) {
+        console.error('❌ chatBot 요소를 찾을 수 없습니다');
+        return;
+    }
+    
+    chatBot.classList.add('open');
+    if (floatingBtn) floatingBtn.classList.add('hidden');
+    document.body.classList.add('chat-open');
+    
+    // 챗봇이 열릴 때 초기화
+    if (typeof initChatbot === 'function') {
+        initChatbot();
+    }
+    
+    console.log('✅ 챗봇 열림');
+}

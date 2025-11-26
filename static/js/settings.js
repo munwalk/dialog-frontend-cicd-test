@@ -2,25 +2,10 @@
    Chatbot & Sidebar Fetch
 =================================*/
 document.addEventListener("DOMContentLoaded", async() => {
-    // 챗봇 로드
-    const loggedInUser = await loadCurrentUser();
-    fetch("components/chatbot.html")
-        .then(res => res.text())
-        .then(html => {
-            const container = document.getElementById("chatbot-container");
-            container.innerHTML = html;
-
-            const closeBtn = container.querySelector(".close-chat-btn");
-            const sendBtn = container.querySelector(".send-btn");
-            const chatInput = container.querySelector("#chatInput");
-            const floatingBtn = document.getElementById("floatingChatBtn");
-
-            if (closeBtn) closeBtn.addEventListener("click", closeChat);
-            if (sendBtn) sendBtn.addEventListener("click", sendMessage);
-            if (chatInput) chatInput.addEventListener("keypress", handleChatEnter);
-            if (floatingBtn) floatingBtn.addEventListener("click", openChat);
-        });
+    await initializeChatbot();
     
+    const loggedInUser = await loadCurrentUser();
+
     // 사이드바 로드
     fetch("components/sidebar.html")
         .then(res => res.text())

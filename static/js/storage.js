@@ -1,7 +1,10 @@
 /* ===============================
    Chatbot & Sidebar Fetch
 =================================*/
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+
+    await initializeChatbot();
+
     // 사이드바 로드
     fetch("components/sidebar.html")
         .then(res => res.text())

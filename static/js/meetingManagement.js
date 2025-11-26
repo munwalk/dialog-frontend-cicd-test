@@ -1,24 +1,9 @@
 /* ===============================
    Chatbot & Sidebar Fetch
 =================================*/
-document.addEventListener("DOMContentLoaded", () => {
-    // 챗봇 로드
-    fetch("components/chatbot.html")
-        .then(res => res.text())
-        .then(html => {
-            const container = document.getElementById("chatbot-container");
-            container.innerHTML = html;
-
-            const closeBtn = container.querySelector(".close-chat-btn");
-            const sendBtn = container.querySelector(".send-btn");
-            const chatInput = container.querySelector("#chatInput");
-            const floatingBtn = document.getElementById("floatingChatBtn");
-
-            if (closeBtn) closeBtn.addEventListener("click", closeChat);
-            if (sendBtn) sendBtn.addEventListener("click", sendMessage);
-            if (chatInput) chatInput.addEventListener("keypress", handleChatEnter);
-            if (floatingBtn) floatingBtn.addEventListener("click", openChat);
-        });
+document.addEventListener("DOMContentLoaded", async () => {
+    // 챗봇 초기화 (전역 함수 사용)
+    await initializeChatbot();
     
     // 사이드바 로드
     fetch("components/sidebar.html")

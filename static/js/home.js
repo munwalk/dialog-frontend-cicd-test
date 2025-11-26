@@ -3,6 +3,8 @@
 ================================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
+    await initializeChatbot();
+    
     // 1. 공통 컴포넌트 로드 (사이드바, 챗봇 등)
     // await을 써서 컴포넌트 로드가 끝날 때까지 기다립니다. (loadCommonComponents 수정 필요)
     await loadCommonComponents(); 
@@ -24,18 +26,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function loadCommonComponents() {
     const promises = [];
 
-    // 챗봇 로드
-    const chatbotPromise = fetch("components/chatbot.html")
-        .then(res => res.text())
-        .then(html => {
-            const container = document.getElementById("chatbot-container");
-            if (container) {
-                container.innerHTML = html;
-                initChatbotEventListeners();
-            }
-        });
-    promises.push(chatbotPromise);
-
     // 사이드바 로드
     const sidebarPromise = fetch("components/sidebar.html")
         .then(res => res.text())
@@ -50,18 +40,6 @@ async function loadCommonComponents() {
 
     // 모든 로드가 끝날 때까지 기다림
     await Promise.all(promises);
-}
-
-function initChatbotEventListeners() {
-    const closeBtn = document.querySelector(".close-chat-btn");
-    const sendBtn = document.querySelector(".send-btn");
-    const chatInput = document.querySelector("#chatInput");
-    const floatingBtn = document.getElementById("floatingChatBtn");
-
-    if (window.closeChat && closeBtn) closeBtn.addEventListener("click", window.closeChat);
-    if (window.sendMessage && sendBtn) sendBtn.addEventListener("click", window.sendMessage);
-    if (window.handleChatEnter && chatInput) chatInput.addEventListener("keypress", window.handleChatEnter);
-    if (window.openChat && floatingBtn) floatingBtn.addEventListener("click", window.openChat);
 }
 
 function activateCurrentNav(sidebar) {

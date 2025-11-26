@@ -1,3 +1,43 @@
+/* ========================================
+   채팅 헤더 버튼 (최우선 적용)
+========================================= */
+.chat-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 16px 20px !important;
+    background: white;
+    color: white !important;
+    border-radius: 12px 12px 0 0 !important;
+}
+
+.chat-header-buttons {
+    display: flex !important;
+    gap: 8px !important;
+    align-items: center !important;
+}
+
+.header-icon-btn,
+.close-chat-btn {
+    width: 36px !important;
+    height: 36px !important;
+    border: none !important;
+    background: #8E44AD !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s !important;
+    color: white !important;
+}
+
+.header-icon-btn:hover,
+.close-chat-btn:hover {
+    background: #7d3c98 !important;
+    transform: scale(1.05) !important;
+}
+
 /* 탭 형태 모드 선택 */
 .chat-mode-tabs {
     display: flex;
@@ -26,8 +66,8 @@
 }
 
 .mode-tab.active {
-    color: #7c3aed;
-    border-bottom-color: #7c3aed;
+    color: #8E44AD;
+    border-bottom-color: #8E44AD;
     background: #fff;
     font-weight: 600;
 }
@@ -74,5 +114,387 @@
     background: rgba(124, 58, 237, 0.1);
     border-radius: 4px;
     font-size: 12px;
-    color: #7c3aed;
+    color: #8E44AD;
+}
+
+/* ========================================
+   챗봇 기본 스타일
+========================================= */
+/* 챗봇 기본 스타일 */
+.chat-bot {
+    position: fixed;
+    right: 0;
+    top: 0;
+    height: 100vh;
+    background: white;
+    border-left: 1px solid #e5e7eb;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.1);
+    transition: width 0.3s;
+    width: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    z-index: 999999 !important;
+}
+
+.chat-bot.open {
+    width: 384px;
+}
+
+/* 챗봇 정보 영역 */
+.chat-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.chat-avatar {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.chat-status {
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-title {
+    font-weight: 600;
+    font-size: 15px;
+    color: #212529;
+}
+
+.chat-online {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.online-dot {
+    width: 8px;
+    height: 8px;
+    background: #10b981;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* 히스토리 사이드바 */
+#historySidebar {
+    position: fixed;
+    top: 0;
+    left: -350px;
+    width: 350px;
+    height: 100vh;
+    background: white;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    transition: left 0.3s ease;
+    z-index: 999998 !important;  /* 기존: 99999 → 999998로 변경 */
+    overflow-y: auto;
+    display: none;
+    flex-direction: column;
+}
+
+#historySidebar.open {
+    left: 0;
+    display: flex;
+}
+
+/* 챗봇이 닫혀있을 때 히스토리도 숨김 */
+.chat-bot:not(.open) #historySidebar {
+    display: none !important;
+}
+
+/* 히스토리 헤더 */
+.history-header {
+    padding: 20px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.history-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.close-history-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    transition: all 0.2s;
+}
+
+.close-history-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* 히스토리 리스트 */
+#historyList {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+}
+
+.history-item {
+    padding: 14px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    background: #f8f9fa;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+}
+
+.history-item:hover {
+    background: #e9ecef;
+    border-left-color: #8E44AD;
+    transform: translateX(4px);
+}
+
+.history-item-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #212529;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.history-item-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.history-item-time {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.history-item-mode {
+    padding: 2px 8px;
+    background: #8E44AD;
+    color: white;
+    border-radius: 4px;
+    font-size: 11px;
+}
+
+/* 빈 히스토리 */
+.history-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: #9ca3af;
+    text-align: center;
+}
+
+.history-empty svg {
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.history-empty p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* 히스토리 오버레이 */
+.history-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0);
+    transition: background 0.3s ease;
+    z-index: 999997 !important;  /* 기존: 99998 → 999997로 변경 */
+    pointer-events: none;
+    display: none;
+}
+
+.history-overlay.active {
+    background: rgba(0, 0, 0, 0.3);
+    pointer-events: auto;
+    display: block;
+}
+
+/* 챗봇이 닫혀있을 때 오버레이도 숨김 */
+.chat-bot:not(.open) .history-overlay {
+    display: none !important;
+}
+
+/* 채팅 메시지 영역 */
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* 메시지 버블 */
+.message {
+    display: flex;
+    margin-bottom: 12px;
+}
+
+.message.user {
+    justify-content: flex-end;
+}
+
+.message.bot {
+    justify-content: flex-start;
+}
+
+.message-bubble {
+    max-width: 70%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    word-wrap: break-word;
+    white-space: pre-line;
+}
+
+.message.user .message-bubble {
+    background: #8E44AD;
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+.message.bot .message-bubble {
+    background: #f1f3f5;
+    color: #212529;
+    border-bottom-left-radius: 4px;
+}
+
+/* 챗봇 입력 영역 */
+.chat-input-area {
+    padding: 16px 20px;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+}
+
+.chat-input-wrapper {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.chat-input {
+    flex: 1;
+    padding: 10px 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.chat-input:focus {
+    border-color: #8E44AD;
+    box-shadow: 0 0 0 3px rgba(142, 68, 173, 0.1);
+}
+
+.send-btn {
+    width: 40px;
+    height: 40px;
+    background: #8E44AD;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: white;
+}
+
+.send-btn:hover {
+    background: #7d3c98;
+    transform: scale(1.05);
+}
+
+/* 플로팅 버튼 */
+.floating-chat-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 60px;
+    height: 60px;
+    background: #8E44AD;
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(142, 68, 173, 0.4);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999996 !important;  /* 기존: 9999 → 999996로 변경 */
+    transition: all 0.3s;
+    color: white;
+}
+
+.floating-chat-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(142, 68, 173, 0.6);
+}
+
+.floating-chat-btn.hidden {
+    display: none;
+}
+
+/* ========================================
+   STT/AI 요약과의 충돌 방지
+========================================= */
+.chat-bot,
+.chat-bot *,
+#historySidebar,
+#historySidebar *,
+#historyOverlay,
+.floating-chat-btn {
+    box-sizing: border-box !important;
+}
+
+/* 챗봇 영역의 독립성 보장 */
+.chat-bot {
+    isolation: isolate;
+}
+
+/* 다른 요소들이 챗봇을 가리지 못하도록 */
+body > *:not(.chat-bot):not(.floating-chat-btn):not(#historySidebar):not(#historyOverlay) {
+    z-index: auto !important;
 }

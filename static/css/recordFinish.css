@@ -667,7 +667,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 999995 !important;
   backdrop-filter: blur(4px);
 }
 
@@ -1331,17 +1331,16 @@ hr.modal-divider {
    ============================================ */
 
 .job-modal-overlay {
-    display: none; /* JS에서 flex로 제어됨 */
+    display: none;
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    z-index: 9999;
+    z-index: 999995 !important;
     justify-content: center;
     align-items: center;
-    /* 부드러운 등장을 위한 옵션 (선택사항) */
     backdrop-filter: blur(2px);
 }
 
