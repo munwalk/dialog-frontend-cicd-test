@@ -62,12 +62,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /opt/dialog
-            # 기존 Frontend 컨테이너 정리
-            docker-compose stop frontend || true
-            docker-compose rm -f frontend || true
-            # 최신 이미지 받기
             docker pull munwalk/dialog-frontend:latest
-            # Frontend 재시작
-            docker-compose up -d --no-deps frontend
-            # 상태 확인
+            docker-compose up -d --no-deps --force-recreate frontend
             docker ps | grep dialog-frontend
