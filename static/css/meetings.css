@@ -215,7 +215,8 @@
 
 .priority-badge.high,
 .priority-badge.medium,
-.priority-badge.low {
+.priority-badge.low,
+.priority-badge.pending {
     background: none;
     border: none;
     padding: 0;

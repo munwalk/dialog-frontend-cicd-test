@@ -101,23 +101,33 @@ async function loadMeetingDetail(meetingId) {
             fetch(`http://dialogai.duckdns.org:8080/api/recordings/meeting/${meetingId}`, { credentials: 'include' })
         ]);
 
+        // 1. 기본 정보(metaRes)는 필수이므로 실패 시 에러 처리
         if (!metaRes.ok) throw new Error("회의 정보를 찾을 수 없습니다.");
         const metaData = await metaRes.json();
 
+        // 2. 대화 내용(transRes) 처리
         let transcripts = [];
         if (transRes.ok) {
             const tData = await transRes.json();
             transcripts = tData.filter(t => !t.isDeleted).sort((a,b) => a.sequenceOrder - b.sequenceOrder);
         }
 
+        // 3. 녹음 파일(recRes) 처리
+        // 404(녹음 없음)인 경우를 명시적으로 체크하여 정상 흐름으로 처리
         let realDuration = 0;
-        if (recRes.ok) {
+        
+        if (recRes.status === 404) {
+            console.log("이 회의에는 녹음 파일이 없습니다.");
+            // 에러를 던지지 않고 duration을 0으로 유지
+        } else if (recRes.ok) {
             const recData = await recRes.json();
             realDuration = recData.durationSeconds || 0;
         }
 
+        // 데이터 통합 객체 생성
         meetingData = {
             id: metaData.meetingId,
+            status: metaData.status,
             title: metaData.title,
             date: metaData.scheduledAt, 
             durationSeconds: realDuration, 
@@ -143,7 +153,7 @@ async function loadMeetingDetail(meetingId) {
 function renderDetailView() {
     if (!meetingData) return;
 
-    // 1. 헤더 정보
+    // 1. 헤더 정보 표시
     document.getElementById('meetingTitle').textContent = meetingData.title;
     if(meetingData.date) {
         const dateObj = new Date(meetingData.date);
@@ -153,92 +163,221 @@ function renderDetailView() {
     document.getElementById('meetingDuration').textContent = formatDuration(meetingData.durationSeconds);
     document.getElementById('participantCount').textContent = `${meetingData.participantCount}명 참석`;
 
-    // 2. 대화 내용
+    // 2. 헤더 버튼 (상태별 분기)
+    const actionContainer = document.querySelector('.header-actions');
+    if (actionContainer) {
+        if (meetingData.status === 'SCHEDULED') {
+            // [예정된 회의] -> 삭제 / 회의 시작
+            actionContainer.innerHTML = `
+                <button class="action-btn delete" onclick="deleteMeeting()" style="background: white; color: #ef4444; border: 1px solid #e5e7eb;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2v2"></path></svg>
+                    삭제
+                </button>
+                <button class="action-btn primary" onclick="startMeetingRecording(${meetingData.id})">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3" fill="currentColor"></circle></svg>
+                    회의 시작
+                </button>
+            `;
+        } else {
+            // [완료된 회의] -> 삭제 / 수정 / PDF
+            actionContainer.innerHTML = `
+                <button class="action-btn delete" onclick="deleteMeeting()" style="background: white; color: #ef4444; border: 1px solid #e5e7eb;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2v2"></path></svg>
+                    삭제
+                </button>
+                <button class="action-btn secondary" onclick="goToEdit()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                    수정
+                </button>
+                <button class="action-btn primary" onclick="exportPDF()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                    PDF 다운로드
+                </button>
+            `;
+        }
+    }
+
+    // 3. 대화 내용 렌더링
     displayTranscripts();
 
-    // 3. AI 요약
+    // 4. AI 요약 & 액션 아이템 (상태별 UI 분기)
+    const aiSection = document.getElementById('aiSummarySection');
     const summaryTexts = document.querySelectorAll('.summary-text');
-    if(summaryTexts.length >= 3) {
-        summaryTexts[0].textContent = meetingData.purpose || "-";
-        
-        let agendaText = meetingData.agenda || "-";
-        summaryTexts[1].textContent = agendaText.replace(/^-\s*/, ""); 
-
-        let cleanSummary = (meetingData.summary || "")
-            .replace(/^(요약|Summary)[:\s]*/i, "")
-            .split("(중요도")[0]
-            .split("중요도 평가")[0]
-            .trim();
-        summaryTexts[2].textContent = cleanSummary || "요약 없음";
-    }
-    
-    // 4. 중요도
     const impEl = document.querySelector('.importance-text');
-    if (impEl) {
-        let level = "MEDIUM";
-        let reason = "";
-        if (meetingData.importance) {
-            if (typeof meetingData.importance === 'object') {
-                level = meetingData.importance.level || "MEDIUM";
-                reason = meetingData.importance.reason || "";
+    const actionList = document.getElementById('actionList');
+
+    if (aiSection) aiSection.style.display = 'block';
+
+    if (meetingData.status === 'SCHEDULED') {
+        // ============================================================
+        // [CASE 1] 분석 전 (SCHEDULED)
+        // - 모든 텍스트: "분석 전"
+        // - 뱃지: 없음
+        // - 액션 아이템: "생성 전" (왼쪽 정렬)
+        // ============================================================
+        
+        if(summaryTexts.length >= 3) {
+            // 목적, 안건, 요약 모두 "분석 전"으로 통일
+            summaryTexts[0].innerHTML = "<span style='color: #9ca3af;'>분석 전</span>";
+            summaryTexts[1].innerHTML = "<span style='color: #9ca3af;'>분석 전</span>";
+            summaryTexts[2].innerHTML = "<span style='color: #9ca3af;'>분석 전</span>";
+        }
+
+        if (impEl) {
+            // 중요도: 뱃지 없이 텍스트만 표시
+            impEl.innerHTML = `<span style="color: #9ca3af; font-size: 14px;">분석 전</span>`;
+        }
+
+        if (actionList) {
+            // 액션 아이템: 왼쪽 정렬(text-align: left) 적용
+            actionList.innerHTML = `
+                <div style="text-align: left; padding: 10px 0; color: #9ca3af; font-size: 14px;">
+                    생성 전
+                </div>
+            `;
+        }
+
+    } else {
+        // [CASE 2] 완료됨 (COMPLETED) 상태 처리
+
+        // 1. 실제 분석된 데이터가 있는지 판단하는 기준
+        // (요약이 비어있거나, 중요도 사유가 없으면 분석 안 된 것으로 간주)
+        let isAnalyzed = false;
+        
+        if (meetingData.summary && meetingData.summary.trim() !== "" && meetingData.summary !== "요약 없음") {
+            isAnalyzed = true;
+        }
+        
+        // -------------------------------------------------------
+        // (1) 텍스트 필드 (목적, 안건, 요약) 통일
+        // -------------------------------------------------------
+        if(summaryTexts.length >= 3) {
+            if (isAnalyzed) {
+                // 데이터가 있을 때
+                summaryTexts[0].textContent = meetingData.purpose || "-";
+                
+                let agendaText = meetingData.agenda || "-";
+                summaryTexts[1].textContent = agendaText.replace(/^-\s*/, ""); 
+                
+                let cleanSummary = meetingData.summary
+                    .replace(/^(요약|Summary)[:\s]*/i, "")
+                    .split("(중요도")[0]
+                    .split("중요도 평가")[0]
+                    .trim();
+                
+                summaryTexts[2].innerHTML = cleanSummary;
+                summaryTexts[2].style.color = "#374151"; // 검은색 (내용)
             } else {
-                level = meetingData.importance;
+                // 데이터가 없을 때
+                summaryTexts[0].innerHTML = "<span style='color: #9ca3af;'>-</span>";
+                summaryTexts[1].innerHTML = "<span style='color: #9ca3af;'>-</span>";
+                summaryTexts[2].innerHTML = "<span style='color: #9ca3af;'>생성된 요약이 없습니다.</span>";
             }
         }
         
-        const upperLevel = String(level).toUpperCase(); 
-        let badgeClass = "medium";
-        let korLabel = "보통";
+        // -------------------------------------------------------
+        // (2) 중요도 표시 (사유가 없으면 MEDIUM이라도 숨김 처리)
+        // -------------------------------------------------------
+        if (impEl) {
+            let level = "MEDIUM";
+            let reason = "";
+            let hasReason = false; // 사유 존재 여부
 
-        if(upperLevel === 'HIGH' || upperLevel === '높음') { badgeClass = 'high'; korLabel = '높음'; }
-        else if(upperLevel === 'LOW' || upperLevel === '낮음') { badgeClass = 'low'; korLabel = '낮음'; }
+            if (meetingData.importance) {
+                if (typeof meetingData.importance === 'object') {
+                    level = meetingData.importance.level || "MEDIUM";
+                    reason = meetingData.importance.reason || "";
+                } else {
+                    level = meetingData.importance;
+                }
+            }
 
-        if (reason.includes("중요도 평가")) {
-            reason = reason.split("중요도 평가")[0].trim();
+            // 중요도 사유가 유의미한지 체크
+            if (reason && reason.trim() !== "" && reason !== "평가 내용 없음") {
+                hasReason = true;
+            }
+
+            if (hasReason) {
+                // [분석 완료] 뱃지 + 사유 표시
+                const upperLevel = String(level).toUpperCase(); 
+                let badgeClass = "medium";
+                let korLabel = "보통";
+
+                if(upperLevel === 'HIGH' || upperLevel === '높음') { badgeClass = 'high'; korLabel = '높음'; }
+                else if(upperLevel === 'LOW' || upperLevel === '낮음') { badgeClass = 'low'; korLabel = '낮음'; }
+
+                // 텍스트에서 중복 제거
+                if (reason.includes("중요도 평가")) {
+                    reason = reason.split("중요도 평가")[0].trim();
+                }
+
+                impEl.innerHTML = `
+                    <div class="importance-container">
+                        <span class="importance-badge ${badgeClass}">${upperLevel}</span>
+                        <div class="importance-text-content">
+                            <p class="importance-title">중요도 평가 : ${korLabel}</p>
+                            <p class="importance-desc">${reason}</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // [분석 안됨] 뱃지 숨김 + "-" 표시
+                // DB에 MEDIUM이 있어도 사유가 없으면 안 보여줌
+                impEl.innerHTML = `
+                    <div class="importance-container">
+                        <span style="color: #9ca3af; font-size: 14px;">-</span>
+                        <div class="importance-text-content" style="margin-top: 4px;">
+                            <p class="importance-desc" style="color: #9ca3af; font-size: 14px;">평가 내용 없음</p>
+                        </div>
+                    </div>
+                `;
+            }
         }
 
-        impEl.innerHTML = `
-            <div class="importance-container">
-                <span class="importance-badge ${badgeClass}">${upperLevel}</span>
-                <div class="importance-text-content">
-                    <p class="importance-title">중요도 평가 : ${korLabel}</p>
-                    <p class="importance-desc">${reason || "평가 내용 없음"}</p>
-                </div>
-            </div>
-        `;
-    }
-
-    // 5. 키워드
-    renderKeywords();
-
-    // 6. 액션 아이템
-    const actionList = document.getElementById('actionList');
-    if (actionList && meetingData.actions) {
-        actionList.innerHTML = meetingData.actions.map(a => {
-            const source = (a.source ? a.source.toUpperCase() : 'USER');
-            const sourceText = (source === 'AI') ? 'AI' : '사용자';
-            const badgeClass = (source === 'AI') ? 'ai' : 'user';
-            const sourceBadge = `<span class="action-source-badge ${badgeClass}">${sourceText}</span>`;
-            
-            const assignee = a.assignee ? `담당: ${a.assignee}` : '담당: 미지정';
-            const date = a.dueDate ? `기한: ${a.dueDate.split('T')[0]}` : '기한: -';
-
-            return `
-            <div class="action-item">
-                <div class="action-header">
-                    <div class="action-title">
-                        ${a.task} ${sourceBadge}
+        // -------------------------------------------------------
+        // (3) 액션 아이템 리스트
+        // -------------------------------------------------------
+        if (actionList) {
+            if (meetingData.actions && meetingData.actions.length > 0) {
+                // ... (기존 리스트 렌더링 코드 유지) ...
+                actionList.innerHTML = meetingData.actions.map(a => {
+                    const source = (a.source ? a.source.toUpperCase() : 'USER');
+                    const sourceText = (source === 'AI') ? 'AI' : '사용자';
+                    const badgeClass = (source === 'AI') ? 'ai' : 'user';
+                    const sourceBadge = `<span class="action-source-badge ${badgeClass}">${sourceText}</span>`;
+                    const assignee = a.assignee ? `담당: ${a.assignee}` : '담당: 미지정';
+                    const date = a.dueDate ? `기한: ${a.dueDate.split('T')[0]}` : '기한: -';
+        
+                    return `
+                    <div class="action-item">
+                        <div class="action-header">
+                            <div class="action-title">${a.task} ${sourceBadge}</div>
+                        </div>
+                        <div class="action-meta">
+                            <div>${date}</div>
+                            <div style="color: #d1d5db;">|</div>
+                            <div>${assignee}</div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } else {
+                // 액션 아이템 없을 때 (가운데 정렬 안내 문구)
+                actionList.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 14px;">
+                        등록된 액션 아이템이 없습니다.
                     </div>
-                </div>
-                <div class="action-meta">
-                    <div>${date}</div>
-                    <div style="color: #d1d5db;">|</div>
-                    <div>${assignee}</div>
-                </div>
-            </div>
-        `;
-        }).join('');
+                `;
+            }
+        }
     }
+    
+    renderKeywords();
+}
+
+/* 회의 시작 버튼 클릭 핸들러 */
+function startMeetingRecording(meetingId) {
+    // 녹음 페이지로 이동 (파일명: recording.html)
+    window.location.href = `recording.html?meetingId=${meetingId}`;
 }
 
 function displayTranscripts() {
@@ -539,7 +678,7 @@ function goToEdit() {
 }
 
 /* ==================================================
-   [수정됨] 삭제 관련 함수 (모달 띄우기)
+   삭제 관련 함수 (모달 띄우기)
    ================================================== */
 
 function deleteMeeting() {

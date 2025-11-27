@@ -215,9 +215,10 @@ async function startSpeakerAnalysis(audioUrl) {
   console.log("발화자 분석 시작 요청:", audioUrl);
 
   try {
-    const res = await fetch("/api/analyze/object", {
+    const res = await fetch("http://localhost:8080/api/analyze/object", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: 'include',
       body: JSON.stringify({
         file_url: audioUrl,
         language: "ko",
@@ -249,7 +250,7 @@ async function pollSpeakerResult(token, filename) {
   console.log("JSON polling 시작...");
 
   // filename 반드시 포함해야 Object Storage JSON 찾을 수 있음
-  const url = `/api/analyze/${token}?filename=${filename}`;
+  const url = `http://localhost:8080/api/analyze/${token}?filename=${filename}`;
 
   let tryCount = 0;
 
@@ -517,12 +518,15 @@ async function loadMeetingDataFromServer() {
             meetingData.audioFileUrl &&
             typeof meetingData.audioFileUrl === "string" &&
             meetingData.audioFileUrl.startsWith("https://") &&
-            meetingData.audioFileUrl.includes("object.ncloudstorage.com")
+            meetingData.audioFileUrl.includes("object.ncloudstorage.com") &&
+            meetingData.audioFileSize > 0
         ) {
             console.log("🎤 자동 발화자 분석 시작:", meetingData.audioFileUrl);
             startSpeakerAnalysis(meetingData.audioFileUrl);
-}
-        
+        } else {
+            console.log("⚠️ 오디오 파일이 없거나 크기가 0이므로 자동 분석을 건너뜁니다.");
+        }
+
         // 로컬 스토리지 백업
         localStorage.setItem("lastMeeting", JSON.stringify(meetingData));
 
@@ -537,6 +541,12 @@ async function loadRecording(meetingId) {
         const response = await fetch(`http://dialogai.duckdns.org:8080/api/recordings/meeting/${meetingId}`, {
             credentials: 'include'
         });
+
+        // 404(녹음 없음)면 조용히 종료 (에러 로그 방지)
+        if (response.status === 404) {
+            console.log("녹음 파일이 없는 회의입니다.");
+            return;
+        }
 
         if (response.ok) {
             const recording = await response.json();
@@ -2106,7 +2116,7 @@ async function saveMeeting() {
     }
 
     const updateDto = collectUpdateData();
-    console.log("📤 서버로 전송할 데이터:", updateDto);
+    console.log("서버로 전송할 데이터:", updateDto);
     showLoadingMessage("회의록을 서버에 저장 중...");
 
     try {
@@ -2120,15 +2130,16 @@ async function saveMeeting() {
         if (!response.ok) throw new Error(await response.text());
 
         hideLoadingMessage();
-        showSuccessMessage("회의록이 서버에 저장되었습니다.");
+        showSuccessMessage("회의록이 저장되었습니다. 상세 페이지로 이동합니다.");
         
-        if (meetingData) {
-            meetingData.actions = actionItems;
-            localStorage.setItem("lastMeeting", JSON.stringify(meetingData));
-        }
+        // 저장 후 상세 페이지로 이동
+        setTimeout(() => {
+            window.location.href = `meetingDetail.html?id=${meetingId}`;
+        }, 1500); 
+
     } catch (error) {
         hideLoadingMessage();
-        console.error("서버 저장 실패:", error);
+        console.error("서버 저장 실패", error);
         showErrorMessage(`서버 저장 실패: ${error.message}`);
     }
 }

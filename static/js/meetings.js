@@ -207,7 +207,7 @@ function applyFilters() {
 /* 목록 그리기 */
 function renderMeetingList(meetings) {
     const tableCard = document.querySelector('.table-card');
-    const header = tableCard.querySelector('.table-header'); // 헤더 보존
+    const header = tableCard.querySelector('.table-header'); 
     
     tableCard.innerHTML = '';
     if (header) tableCard.appendChild(header);
@@ -217,29 +217,47 @@ function renderMeetingList(meetings) {
         emptyDiv.style.padding = "60px 0";
         emptyDiv.style.textAlign = "center";
         emptyDiv.style.color = "#9ca3af";
-        emptyDiv.innerHTML = `
-            <div style="margin-bottom: 10px; font-size: 24px;">📭</div>
-            <p>조건에 맞는 회의록이 없습니다.</p>
-        `;
+        emptyDiv.innerHTML = `<p>조건에 맞는 회의록이 없습니다.</p>`;
         tableCard.appendChild(emptyDiv);
         return;
     }
 
     meetings.forEach(meeting => {
-        // 날짜 포맷
         const dateObj = new Date(meeting.scheduledAt || meeting.meetingDate);
         const dateStr = `${(dateObj.getMonth()+1).toString().padStart(2, '0')}/${dateObj.getDate().toString().padStart(2, '0')}`;
         const timeStr = `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
 
-        // 우선순위
-        let priority = "MEDIUM";
-        if (meeting.importance) {
-            priority = (typeof meeting.importance === 'object') ? meeting.importance.level : meeting.importance;
-        }
-        const pClass = getPriorityClass(priority);
-        const pLabel = getPriorityLabel(priority);
+        // SCHEDULED 상태 처리
+        let pClass = 'medium';
+        let pLabel = '보통';
 
-        // 키워드
+        if (meeting.status === 'SCHEDULED') {
+            pClass = 'pending'; 
+            pLabel = '분석 전';
+        } else {
+            // 완료된 회의라도 사유가 없으면 '-'로 표시
+            let priority = "MEDIUM";
+            let reason = "";
+            
+            if (meeting.importance && typeof meeting.importance === 'object') {
+                priority = meeting.importance.level;
+                reason = meeting.importance.reason;
+            } else {
+                priority = meeting.importance;
+                // 객체가 아니고 문자열만 왔다면 reason 확인 불가 -> 일단 표시하거나, 
+                // 백엔드 DTO 구조상 importance는 객체로 옴
+            }
+
+            // 사유가 비어있으면 분석 안 된 것으로 간주
+            if (!reason || reason.trim() === "" || reason === "평가 내용 없음") {
+                pClass = 'pending';
+                pLabel = '-'; // '보통' 대신 대시 표시
+            } else {
+                pClass = getPriorityClass(priority);
+                pLabel = getPriorityLabel(priority);
+            }
+        }
+
         const keywordHtml = renderKeywords(meeting.keywords);
 
         const row = document.createElement('div');
