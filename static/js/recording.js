@@ -30,10 +30,26 @@ let analyser = null;
 let animationId = null;
 
 /* ===============================
+   키워드 하이라이트 색상 팔레트
+=================================*/
+const HIGHLIGHT_COLORS = [
+  { bg: '#fef3c7', text: '#92400e', border: '#fde68a', name: '노란색' },
+  { bg: '#dbeafe', text: '#1e40af', border: '#93c5fd', name: '파란색' },
+  { bg: '#fce7f3', text: '#9f1239', border: '#fbcfe8', name: '분홍색' },
+  { bg: '#d1fae5', text: '#065f46', border: '#a7f3d0', name: '초록색' },
+  { bg: '#e0e7ff', text: '#3730a3', border: '#c7d2fe', name: '인디고' },
+  { bg: '#fed7aa', text: '#9a3412', border: '#fdba74', name: '주황색' },
+  { bg: '#e9d5ff', text: '#6b21a8', border: '#d8b4fe', name: '보라색' },
+  { bg: '#fecaca', text: '#991b1b', border: '#fca5a5', name: '빨간색' },
+];
+
+let keywordColorMap = new Map();
+
+
+/* ===============================
    Chatbot & Sidebar Fetch
 =================================*/
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("🚀 페이지 로드 시작");
 
   // 챗봇 로드
   fetch("components/chatbot.html")
@@ -67,9 +83,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
       navItems.forEach(item => {
         const linkPath = item.getAttribute("href");
-        if (linkPath === currentPage) {
-          item.classList.add("active");
+
+        // 먼저 모든 active 제거
+        item.classList.remove("active");
+
+        // recording.html과 recordFinish.html은 recordSetting 메뉴를 active로 표시
+        if (currentPage === "recording.html" || currentPage === "recordFinish.html") {
+          if (linkPath === "recordSetting.html") {
+            item.classList.add("active");
+            console.log("✅ active 추가:", linkPath);
+          }
+        } else {
+          // 다른 페이지들은 기존 로직 유지
+          if (linkPath === currentPage) {
+            item.classList.add("active");
+            console.log("✅ active 추가:", linkPath);
+          }
         }
+      });
+
+      // 최종 확인
+      console.log("=== 최종 active 상태 ===");
+      navItems.forEach(item => {
+        console.log(item.getAttribute("href"), "→", item.classList.contains("active"));
       });
     })
     .catch(err => console.error("사이드바 로드 실패:", err));
@@ -163,24 +199,43 @@ function showSuccessMessage(message) {
   const msg = document.createElement('div');
   msg.className = 'success-message';
   msg.style.cssText = `
-    position: fixed; top: 24px; right: 24px;
-    background: #10b981; color: white;
-    padding: 16px 24px; border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-    z-index: 9999; display: flex; align-items: center; gap: 12px;
-    animation: slideInRight 0.3s ease;
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: linear-gradient(135deg, #8E44AD 0%, #9b59b6 100%);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 20px;
+    box-shadow: 0 2px 12px rgba(142, 68, 173, 0.3);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    max-width: 400px;
+    font-weight: 500;
+    font-size: 14px;
   `;
   msg.innerHTML = `
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
       <polyline points="20 6 9 17 4 12"/>
     </svg>
     <span>${message}</span>
   `;
   document.body.appendChild(msg);
 
+  // 등장 애니메이션
+  requestAnimationFrame(() => {
+    msg.style.opacity = '1';
+    msg.style.transform = 'translateX(-50%) translateY(0)';
+  });
+
   setTimeout(() => {
-    msg.style.animation = 'slideOutRight 0.3s ease';
-    setTimeout(() => msg.remove(), 300);
+    msg.style.opacity = '0';
+    msg.style.transform = 'translateX(-50%) translateY(-20px)';
+    setTimeout(() => msg.remove(), 400);
   }, 3000);
 }
 
@@ -191,26 +246,45 @@ function showErrorMessage(message) {
   const msg = document.createElement('div');
   msg.className = 'error-message';
   msg.style.cssText = `
-    position: fixed; top: 24px; right: 24px;
-    background: #ef4444; color: white;
-    padding: 16px 24px; border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-    z-index: 9999; display: flex; align-items: center; gap: 12px;
-    animation: slideInRight 0.3s ease;
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    padding: 10px 16px;
+    border-radius: 20px;
+    box-shadow: 0 2px 12px rgba(239, 68, 68, 0.3);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    max-width: 400px;
+    font-weight: 500;
+    font-size: 14px;
   `;
   msg.innerHTML = `
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
       <circle cx="12" cy="12" r="10"/>
-      <line x1="15" y1="9" x2="9" y2="15"/>
-      <line x1="9" y1="9" x2="15" y2="15"/>
+      <line x1="12" y1="8" x2="12" y2="12"/>
+      <line x1="12" y1="16" x2="12.01" y2="16"/>
     </svg>
     <span>${message}</span>
   `;
   document.body.appendChild(msg);
 
+  // 등장 애니메이션
+  requestAnimationFrame(() => {
+    msg.style.opacity = '1';
+    msg.style.transform = 'translateX(-50%) translateY(0)';
+  });
+
   setTimeout(() => {
-    msg.style.animation = 'slideOutRight 0.3s ease';
-    setTimeout(() => msg.remove(), 300);
+    msg.style.opacity = '0';
+    msg.style.transform = 'translateX(-50%) translateY(-20px)';
+    setTimeout(() => msg.remove(), 400);
   }, 3000);
 }
 
@@ -370,18 +444,42 @@ function displayMeetingInfo() {
 
   if (keywordsList && meetingData.keywords) {
     keywordsList.innerHTML = "";
-    keywordCount.textContent = `${meetingData.keywords.length}개`;
+    if (keywordCount) {
+      keywordCount.textContent = `${meetingData.keywords.length}개`;
+    }
 
     console.log(`✅ 키워드 ${meetingData.keywords.length}개 표시 시작`);
 
+    // 🔥 키워드별 색상 할당
+    keywordColorMap.clear();
+
     meetingData.keywords.forEach((keyword, index) => {
+      const keywordStr = typeof keyword === 'string' ? keyword : (keyword.name || keyword.text || String(keyword));
+      
+      // 색상 할당
+      const color = HIGHLIGHT_COLORS[index % HIGHLIGHT_COLORS.length];
+      keywordColorMap.set(keywordStr, color);
+      
       const chip = document.createElement("span");
       chip.className = "keyword-chip";
-      // 🔥 객체일 경우를 대비한 안전한 처리
-      chip.textContent = typeof keyword === 'string' ? keyword : (keyword.name || keyword.text || String(keyword));
+      chip.textContent = keywordStr;
+      
+      // 🔥 키워드 목록에도 같은 색상 적용
+      chip.style.cssText = `
+        background: linear-gradient(135deg, ${color.bg} 0%, ${color.border} 100%);
+        color: ${color.text};
+        border: 1px solid ${color.border};
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+      `;
+      
       keywordsList.appendChild(chip);
-      console.log(`  ${index + 1}. ${keyword}`);
+      console.log(`  ${index + 1}. ${keywordStr} - ${color.name}`);
     });
+
+    console.log('✅ 키워드 색상 매핑 완료:', keywordColorMap);
   } else {
     console.warn("⚠️ keywordsList 요소를 찾을 수 없거나 keywords 데이터 없음");
   }
@@ -462,18 +560,46 @@ function connectSTTWebSocket(language = "ko") {
       }
 
       // -------------------------
-      // 부분 인식(실시간) 텍스트
+      // 🔥 수정: 부분/최종 구분 없이 모두 즉시 표시
       // -------------------------
-      if (data.type === "transcription" && !data.isSentenceEnd) {
-        handlePartialTranscript(data.text);
-        return;
-      }
+      if (data.type === "transcription") {
+        // 빈 텍스트는 무시
+        if (!data.text || data.text.trim() === "") {
+          console.warn("⚠️ 빈 텍스트 수신 - 무시");
+          return;
+        }
 
-      // -------------------------
-      // 최종 문장
-      // -------------------------
-      if (data.type === "transcription" && data.isSentenceEnd) {
-        handleFinalTranscript(data);
+        // 부분 인식이든 최종이든 모두 문장으로 추가
+        const newSentence = {
+          text: data.text.trim(),
+          recordingTime: timerSeconds,
+          confidence: data.confidence || 0,
+          isFinal: data.isSentenceEnd || false  // 최종 여부 기록 (선택적)
+        };
+
+        sentences.push(newSentence);
+        console.log(`✅ 문장 추가 (${sentences.length}) [${formatTime(timerSeconds)}]:`, newSentence.text);
+
+        // UI 업데이트
+        displaySentences();
+        updateTranscriptCount();
+
+        // 🔥 키워드 감지 로그만 (Toast 제거)
+        if (meetingData?.keywords && meetingData.keywords.length > 0) {
+          meetingData.keywords.forEach(keyword => {
+            const keywordStr = typeof keyword === 'string' ? keyword : (keyword.name || keyword.text || '');
+            if (keywordStr && data.text.includes(keywordStr)) {
+              console.log(`🔑 키워드 감지: "${keywordStr}" in "${data.text.substring(0, 50)}..."`);
+              // ✅ 텍스트 하이라이트만 사용 (Toast 알림 제거)
+            }
+          });
+        }
+
+        // 자동 스크롤
+        if (document.getElementById("autoScroll")?.checked) {
+          transcriptContent.scrollTop = transcriptContent.scrollHeight;
+        }
+
         return;
       }
 
@@ -668,133 +794,53 @@ function stopAudioCapture() {
   console.log("✅ 오디오 리소스 정리 완료");
 }
 
-/* ========================================================================================
-  실시간 트랜스크립트 처리
-======================================================================================== */
+/* =============================================================================
+  키워드 하이라이트 토스트
+================================================================================ */
 
-function handlePartialTranscript(text) {
-  if (!text || text.trim() === "") return;
-
-  let partialDiv = document.getElementById("partialTranscript");
-
-  if (!partialDiv) {
-    partialDiv = document.createElement("div");
-    partialDiv.id = "partialTranscript";
-    partialDiv.className = "transcript-item partial";
-    partialDiv.style.opacity = "0.6";
-    partialDiv.style.fontStyle = "italic";
-    partialDiv.style.borderLeft = "3px solid #3b82f6";
-
-    transcriptContent.appendChild(partialDiv);
-  }
-
-  partialDiv.innerHTML = `
-    <div class="transcript-meta">
-      <span class="transcript-time">${formatTime(timerSeconds)}</span>
-      <span style="margin-left:6px;color:#3b82f6;">인식 중...</span>
-    </div>
-    <div class="transcript-text">${escapeHtml(text)}</div>
-  `;
-
-  // 자동 스크롤
-  if (document.getElementById("autoScroll")?.checked) {
-    transcriptContent.scrollTop = transcriptContent.scrollHeight;
-  }
+// 정규식 특수문자 이스케이프
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// function handleFinalTranscript(data) {
-//   // 부분 텍스트 제거
-//   const partialDiv = document.getElementById("partialTranscript");
-//   if (partialDiv) {
-//     partialDiv.remove();
-//   }
-
-//   // 빈 텍스트는 무시
-//   if (!data.text || data.text.trim() === "") return;
-
-//   const currentTime = Date.now();
-
-//   const newSentence = {
-//     text: data.text.trim(),
-//     startTs: currentTime - (timerSeconds * 1000),
-//     endTs: currentTime,
-//     confidence: data.confidence || 0,
-//   };
-
-//   sentences.push(newSentence);
-//   console.log(`최종 문장 추가 (${sentences.length}):`, newSentence.text);
-
-//   // UI 업데이트
-//   displaySentences();
-//   updateTranscriptCount();
-
-//   // 키워드 하이라이트 확인
-//   if (meetingData?.keywords && meetingData.keywords.length > 0) {
-//     meetingData.keywords.forEach(keyword => {
-//       if (data.text.includes(keyword)) {
-//         console.log(`🔑 키워드 감지: ${keyword}`);
-//         showHighlightToast(keyword, data.text);
-//       }
-//     });
-//   }
-// }
-
-function handleFinalTranscript(data) {
-  // 먼저 텍스트 검증
-  if (!data.text || data.text.trim() === "") {
-    console.warn("⚠️ 빈 최종 문장 수신 - 무시");
-    // 부분 텍스트만 제거하고 종료
-    const partialDiv = document.getElementById("partialTranscript");
-    if (partialDiv) {
-      partialDiv.remove();
-    }
-    return;
+// 키워드 하이라이트 적용
+function highlightKeywords(text, keywords) {
+  if (!keywords || keywords.length === 0 || keywordColorMap.size === 0) {
+    return escapeHtml(text);
   }
 
-  // 🔥 녹음 시작 후 경과 시간을 저장
-  const newSentence = {
-    text: data.text.trim(),
-    recordingTime: timerSeconds,  // 🔥 변경
-    confidence: data.confidence || 0,
-  };
+  let highlighted = escapeHtml(text);
 
-  sentences.push(newSentence);
-  console.log(`✅ 최종 문장 추가 (${sentences.length}) [${formatTime(timerSeconds)}]:`, newSentence.text);
+  keywords.forEach((keyword) => {
+    const keywordStr = typeof keyword === 'string' ? keyword : (keyword.name || keyword.text || '');
+    if (!keywordStr) return;
 
-  // 🔥 부분 텍스트는 최종 문장이 추가된 후 제거
-  const partialDiv = document.getElementById("partialTranscript");
-  if (partialDiv) {
-    partialDiv.remove();
-  }
+    const color = keywordColorMap.get(keywordStr);
+    if (!color) return;
 
-  // UI 업데이트
-  displaySentences();
-  updateTranscriptCount();
-
-  // 키워드 하이라이트 확인
-  if (meetingData?.keywords && meetingData.keywords.length > 0) {
-    meetingData.keywords.forEach(keyword => {
-      const keywordStr = typeof keyword === 'string' ? keyword : (keyword.name || keyword.text || '');
-      if (keywordStr && data.text.includes(keywordStr)) {
-        console.log(`🔑 키워드 감지: ${keywordStr}`);
-        showHighlightToast(keywordStr, data.text);
-      }
+    // 대소문자 구분 없이 전역 치환
+    const regex = new RegExp(`(${escapeRegExp(keywordStr)})`, 'gi');
+    
+    highlighted = highlighted.replace(regex, (match) => {
+      return `<span class="keyword-highlight" style="
+        background: linear-gradient(135deg, ${color.bg} 0%, ${color.border} 100%);
+        color: ${color.text};
+        border-bottom: 2px solid ${color.border};
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+      ">${match}</span>`;
     });
-  }
+  });
+
+  return highlighted;
 }
 /* ===========================================================================
   문장 UI 렌더링
 =============================================================================== */
-function displaySentences() {
-  // 🔥 부분 텍스트를 먼저 분리 보관
-  const existingPartial = document.getElementById("partialTranscript");
-  const partialParent = existingPartial ? existingPartial.parentNode : null;
-  
-  if (existingPartial) {
-    existingPartial.remove(); // 일단 DOM에서 제거 (삭제 안됨)
-  }
 
-  // 최종 문장들만 렌더링
+function displaySentences() {
+  // 🔥 단순화: 전체 다시 렌더링
   transcriptContent.innerHTML = "";
 
   sentences.forEach((s, idx) => {
@@ -802,24 +848,24 @@ function displaySentences() {
     div.className = "transcript-item";
     div.dataset.sentenceIndex = idx;
 
-    // 🔥 수정된 타임스탬프 계산
     const timeStr = formatTime(s.recordingTime || 0);
+
+    // 🔥 키워드 하이라이트 적용
+    const highlightedText = meetingData?.keywords 
+        ? highlightKeywords(s.text, meetingData.keywords)
+        : escapeHtml(s.text);
 
     div.innerHTML = `
       <div class="transcript-meta">
         <span class="transcript-time">${timeStr}</span>
         ${s.confidence ? `<span class="confidence" style="margin-left:8px;color:#9ca3af;font-size:12px;">${Math.round(s.confidence * 100)}%</span>` : ''}
+        ${!s.isFinal ? '<span style="margin-left:6px;color:#3b82f6;font-size:0.85em;">인식중</span>' : ''}
       </div>
-      <div class="transcript-text">${escapeHtml(s.text)}</div>
+      <div class="transcript-text">${highlightedText}</div>
     `;
 
     transcriptContent.appendChild(div);
   });
-
-  // 🔥 부분 텍스트를 맨 마지막에 다시 추가
-  if (existingPartial && partialParent) {
-    transcriptContent.appendChild(existingPartial);
-  }
 
   // 자동 스크롤
   if (document.getElementById("autoScroll")?.checked) {
@@ -903,23 +949,40 @@ function formatTime(sec) {
 =============================================================================== */
 
 async function startMicVisualizer() {
+  // micStream은 startAudioCapture()에서 이미 생성됨
+  let retryCount = 0;
+  while (!micStream && retryCount < 10) {
+    console.log(`⏳ micStream 대기 중... (${retryCount + 1}/10)`);
+    await new Promise(resolve => setTimeout(resolve, 100));
+    retryCount++;
+  }
+
   if (!micStream) {
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    console.warn("⚠️ 마이크 스트림을 찾을 수 없습니다 (비주얼라이저 생략)");
+    return;
   }
 
   if (!audioContext || audioContext.state === "closed") {
-    audioContext = new AudioContext();
+    console.warn("⚠️ AudioContext가 없습니다 (비주얼라이저 생략)");
+    return;
   }
 
   analyser = audioContext.createAnalyser();
+  analyser.fftSize = 256;
   const src = audioContext.createMediaStreamSource(micStream);
   src.connect(analyser);
 
+  console.log("✅ 마이크 비주얼라이저 시작");
   visualize();
 }
 
 function visualize() {
-  const bars = document.querySelectorAll(".wave-bar");
+  const bars = document.querySelectorAll(".audio-bar"); // wave-bar → audio-bar
+  if (bars.length === 0) {
+    console.error("audio-bar 요소를 찾을 수 없습니다");
+    return;
+  }
+
   const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
   function update() {
@@ -933,7 +996,7 @@ function visualize() {
 
     bars.forEach((bar, i) => {
       const value = dataArray[i * 8] || avg;
-      bar.style.height = Math.max(10, value / 255 * 100) + "%";
+      bar.style.height = Math.max(10, (value / 255) * 100) + "%";
     });
 
     animationId = requestAnimationFrame(update);
@@ -981,10 +1044,14 @@ function initializeButtons() {
     startBtn.style.display = "none";
     pauseBtn.style.display = "flex";
     endBtn.disabled = false;
-    document.querySelector(".end-warning").style.display = "none";
+    const endWarning = document.querySelector(".end-warning");
+    if (endWarning) {
+      endWarning.style.display = "none";
+    }
 
     startTimer();
     connectSTTWebSocket("ko");
+
     startMicVisualizer();
 
     transcriptContent.innerHTML = "";
@@ -1001,34 +1068,40 @@ function initializeButtons() {
 
     if (isPaused) {
       console.log("⏸ 녹음 일시정지");
+      clearInterval(timerInterval);
       ws?.send(JSON.stringify({ action: "pause" }));
-      pauseMicVisualizer();
+      // pauseMicVisualizer(); // 🔥 이 줄 주석 처리 또는 삭제!
       showSuccessMessage("녹음 일시정지");
       pauseBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/>
-          <polygon points="10 8 16 12 10 16 10 8"/>
-        </svg>
-        재개
-      `;
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <polygon points="10 8 16 12 10 16 10 8"/>
+      </svg>
+      재개
+    `;
     } else {
       console.log("▶️ 녹음 재개");
+      startTimer();
       ws?.send(JSON.stringify({ action: "resume" }));
-      await resumeMicVisualizer();
+      // await resumeMicVisualizer(); // 🔥 이 줄도 주석 처리 또는 삭제!
       showSuccessMessage("녹음 재개");
       pauseBtn.innerHTML = `
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="6" y="4" width="4" height="16"/>
-          <rect x="14" y="4" width="4" height="16"/>
-        </svg>
-        일시정지
-      `;
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="6" y="4" width="4" height="16"/>
+        <rect x="14" y="4" width="4" height="16"/>
+      </svg>
+      일시정지
+    `;
     }
   });
 
-  /* ===============================
-     회의 종료 (디버깅 강화 버전)
-  =================================*/
+
+  /* ========================================================================================
+    회의 종료 처리 - 개선 버전
+  ======================================================================================== */
+
+  // 기존 endBtn 이벤트 리스너를 다음 코드로 교체하세요 (1037-1157번째 줄)
+
   endBtn.addEventListener("click", () => {
     if (!isRecording) return;
 
@@ -1054,19 +1127,26 @@ function initializeButtons() {
         if (ws?.readyState === WebSocket.OPEN) {
           console.log("📤 WebSocket에 stop 신호 전송 - 파일 업로드 대기 시작");
 
+          // 🔥 개선: 타임아웃을 20초로 연장
+          const UPLOAD_TIMEOUT = 20000; // 10000 → 20000
+
           // Promise를 만들어서 audio_uploaded 메시지를 기다림
           const audioUrlPromise = new Promise((resolve, reject) => {
             window.audioUploadResolver = resolve;
             window.audioUploadRejecter = reject;
 
-            // 10초 타임아웃 설정
-            setTimeout(() => {
+            // 타임아웃 설정
+            const timeoutId = setTimeout(() => {
               if (window.audioUploadResolver) {
+                console.error(`❌ ${UPLOAD_TIMEOUT / 1000}초 타임아웃 발생`);
                 window.audioUploadResolver = null;
                 window.audioUploadRejecter = null;
-                reject(new Error("파일 업로드 타임아웃"));
+                reject(new Error(`파일 업로드 타임아웃 (${UPLOAD_TIMEOUT / 1000}초 초과)`));
               }
-            }, 10000);
+            }, UPLOAD_TIMEOUT);
+
+            // 🔥 타임아웃 ID 저장 (성공 시 clearTimeout 하기 위해)
+            window.uploadTimeoutId = timeoutId;
           });
 
           // stop 신호 전송
@@ -1074,12 +1154,26 @@ function initializeButtons() {
 
           try {
             // audio_uploaded 메시지를 받을 때까지 대기
-            console.log("⏳ 파일 업로드 완료 대기 중...");
+            console.log(`⏳ 파일 업로드 완료 대기 중 (최대 ${UPLOAD_TIMEOUT / 1000}초)...`);
             const audioFileUrl = await audioUrlPromise;
+
+            // 🔥 성공 시 타임아웃 취소
+            if (window.uploadTimeoutId) {
+              clearTimeout(window.uploadTimeoutId);
+              window.uploadTimeoutId = null;
+            }
+
             console.log("✅ 파일 업로드 완료 확인:", audioFileUrl);
 
           } catch (error) {
             console.error("❌ 파일 업로드 대기 중 에러:", error);
+
+            // 🔥 타임아웃 정리
+            if (window.uploadTimeoutId) {
+              clearTimeout(window.uploadTimeoutId);
+              window.uploadTimeoutId = null;
+            }
+
             showErrorMessage("녹음 파일 업로드에 실패했습니다. 다시 시도해주세요.");
             return;
           }
@@ -1100,7 +1194,7 @@ function initializeButtons() {
           duration: timerSeconds,
           endTime: new Date().toISOString(),
           recording: {
-            audioFileUrl: recordingMetadata.audioFileUrl,  // 🔥 이 값이 실제로 전달되는지 확인
+            audioFileUrl: recordingMetadata.audioFileUrl,
             audioFormat: "wav",
             audioFileSize: recordingMetadata.audioFileSize,
             durationSeconds: timerSeconds,

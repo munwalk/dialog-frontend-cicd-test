@@ -103,37 +103,9 @@ function parseJwt(token) {
 }
 
 /* ===============================
-   챗봇 함수 (app.js에서 가져옴)
-=================================*/
-function openChat() {
-    const chat = document.getElementById("chatBot");
-    if (!chat) return;
-    chat.classList.add("open");
-    const floatingBtn = document.getElementById("floatingChatBtn");
-    if (floatingBtn) floatingBtn.classList.add("hidden");
-    document.body.classList.add("chat-open");
-}
-
-function closeChat() {
-    const chat = document.getElementById("chatBot");
-    if (!chat) return;
-    chat.classList.remove("open");
-    const floatingBtn = document.getElementById("floatingChatBtn");
-    if (floatingBtn) floatingBtn.classList.remove("hidden");
-    document.body.classList.remove("chat-open");
-}
-
-function sendMessage() {
-    console.log("메시지 전송 (UI만)");
-}
-
-function handleChatEnter(e) {
-    if (e.key === "Enter") sendMessage();
-}
-
-/* ===============================
 공통 메시지 함수
 =================================*/
+
 function showSuccessMessage(message) {
     const existing = document.querySelector('.success-message');
     if (existing) existing.remove();
@@ -142,30 +114,42 @@ function showSuccessMessage(message) {
     msg.className = 'success-message';
     msg.style.cssText = `
         position: fixed;
-        top: 24px;
-        right: 24px;
-        background: #10b981;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-20px);
+        background: linear-gradient(135deg, #8E44AD 0%, #9b59b6 100%);
         color: white;
-        padding: 16px 24px;
+        padding: 10px 16px;
         border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        z-index: 9999;
+        box-shadow: 0 2px 12px rgba(142, 68, 173, 0.3);
+        z-index: 10000;
         display: flex;
         align-items: center;
-        gap: 12px;
-        animation: slideInRight 0.3s ease;
+        gap: 8px;
+        opacity: 0;
+        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        max-width: 400px;
+        font-weight: 500;
+        font-size: 14px;
     `;
     msg.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <polyline points="20 6 9 17 4 12"/>
         </svg>
         <span>${message}</span>
     `;
     document.body.appendChild(msg);
 
+    // 등장 애니메이션
+    requestAnimationFrame(() => {
+        msg.style.opacity = '1';
+        msg.style.transform = 'translateX(-50%) translateY(0)';
+    });
+
     setTimeout(() => {
-        msg.style.animation = 'slideOutRight 0.3s ease';
-        setTimeout(() => msg.remove(), 300);
+        msg.style.opacity = '0';
+        msg.style.transform = 'translateX(-50%) translateY(-20px)';
+        setTimeout(() => msg.remove(), 400);
     }, 3000);
 }
 
@@ -177,21 +161,26 @@ function showErrorMessage(message) {
     msg.className = 'error-message';
     msg.style.cssText = `
         position: fixed;
-        top: 24px;
-        right: 24px;
-        background: #ef4444;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-20px);
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
         color: white;
-        padding: 16px 24px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-        z-index: 9999;
+        padding: 10px 16px;
+        border-radius: 20px;
+        box-shadow: 0 2px 12px rgba(239, 68, 68, 0.3);
+        z-index: 10000;
         display: flex;
         align-items: center;
-        gap: 12px;
-        animation: slideInRight 0.3s ease;
+        gap: 8px;
+        opacity: 0;
+        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        max-width: 400px;
+        font-weight: 500;
+        font-size: 14px;
     `;
     msg.innerHTML = `
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <circle cx="12" cy="12" r="10"/>
             <line x1="12" y1="8" x2="12" y2="12"/>
             <line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -200,9 +189,16 @@ function showErrorMessage(message) {
     `;
     document.body.appendChild(msg);
 
+    // 등장 애니메이션
+    requestAnimationFrame(() => {
+        msg.style.opacity = '1';
+        msg.style.transform = 'translateX(-50%) translateY(0)';
+    });
+
     setTimeout(() => {
-        msg.style.animation = 'slideOutRight 0.3s ease';
-        setTimeout(() => msg.remove(), 300);
+        msg.style.opacity = '0';
+        msg.style.transform = 'translateX(-50%) translateY(-20px)';
+        setTimeout(() => msg.remove(), 400);
     }, 3000);
 }
 
@@ -277,16 +273,17 @@ document.getElementById('micTestBtn').addEventListener('click', async function()
             </svg>
             테스트 시작
         `;
-        showSuccessMessage('마이크 테스트가 종료되었습니다');
     }
 });
 
 
 /* ===============================
    참석자 추가/삭제
+   ✨ Toast 최소화 - 시각적 피드백 강화
 =================================*/
 const participantInput = document.getElementById('participant-name');
 const participantList = document.querySelector('.participants-list');
+
 document.querySelector('.add-participant-btn').addEventListener('click', () => {
     const name = participantInput.value.trim();
     if (!name) return;
@@ -307,30 +304,55 @@ document.querySelector('.add-participant-btn').addEventListener('click', () => {
         <span class="participant-name">${name}</span>
         <button class="remove-participant-btn">✕</button>
     `;
+    
+    // ✨ 부드러운 등장 애니메이션 추가
+    item.style.opacity = '0';
+    item.style.transform = 'translateX(-10px)';
+    item.style.transition = 'all 0.3s ease';
+    
     participantList.appendChild(item);
     participantInput.value = '';
-    item.querySelector('.remove-participant-btn').addEventListener('click', () => {
-        item.remove();
-        showSuccessMessage('참석자가 삭제되었습니다');
+    
+    // 애니메이션 트리거
+    requestAnimationFrame(() => {
+        item.style.opacity = '1';
+        item.style.transform = 'translateX(0)';
     });
-    showSuccessMessage('참석자가 추가되었습니다');
+    
+    // ❌ Toast 제거 - 목록에 추가되는 게 보이므로 충분
+    // showSuccessMessage('참석자가 추가되었습니다');
+    
+    item.querySelector('.remove-participant-btn').addEventListener('click', () => {
+        // ✨ 부드러운 퇴장 애니메이션
+        item.style.opacity = '0';
+        item.style.transform = 'translateX(-10px)';
+        setTimeout(() => item.remove(), 300);
+        // ❌ Toast 제거
+    });
 });
 
 participantInput.addEventListener('keypress', e => {
     if (e.key === 'Enter') document.querySelector('.add-participant-btn').click();
 });
+
 document.querySelectorAll('.remove-participant-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-        btn.closest('.participant-item').remove();
-        showSuccessMessage('참석자가 삭제되었습니다');
+        const item = btn.closest('.participant-item');
+        item.style.opacity = '0';
+        item.style.transform = 'translateX(-10px)';
+        setTimeout(() => item.remove(), 300);
+        // ❌ Toast 제거
     });
 });
 
+
 /* ===============================
    키워드 추가/삭제
+   ✨ Toast 최소화 - 시각적 피드백 강화
 =================================*/
 const keywordInput = document.getElementById('keyword-input');
 const keywordList = document.querySelector('.keywords-list');
+
 document.querySelector('.add-keyword-btn').addEventListener('click', () => {
     const word = keywordInput.value.trim();
     if (!word) return;
@@ -347,24 +369,47 @@ document.querySelector('.add-keyword-btn').addEventListener('click', () => {
     const tag = document.createElement('span');
     tag.className = 'keyword-tag';
     tag.innerHTML = `${word}<button class="remove-keyword-btn">✕</button>`;
+    
+    // ✨ 부드러운 등장 애니메이션
+    tag.style.opacity = '0';
+    tag.style.transform = 'scale(0.8)';
+    tag.style.transition = 'all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55)';
+    
     keywordList.appendChild(tag);
     keywordInput.value = '';
-    tag.querySelector('.remove-keyword-btn').addEventListener('click', () => {
-        tag.remove();
-        showSuccessMessage('키워드가 삭제되었습니다');
+    
+    // 애니메이션 트리거
+    requestAnimationFrame(() => {
+        tag.style.opacity = '1';
+        tag.style.transform = 'scale(1)';
     });
-    showSuccessMessage('키워드가 추가되었습니다');
+    
+    // ❌ Toast 제거 - 태그 추가되는 게 보이므로 충분
+    // showSuccessMessage('키워드가 추가되었습니다');
+    
+    tag.querySelector('.remove-keyword-btn').addEventListener('click', () => {
+        // ✨ 부드러운 퇴장 애니메이션
+        tag.style.opacity = '0';
+        tag.style.transform = 'scale(0.8)';
+        setTimeout(() => tag.remove(), 300);
+        // ❌ Toast 제거
+    });
 });
 
 keywordInput.addEventListener('keypress', e => {
     if (e.key === 'Enter') document.querySelector('.add-keyword-btn').click();
 });
+
 document.querySelectorAll('.remove-keyword-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-        btn.closest('.keyword-tag').remove();
-        showSuccessMessage('키워드가 삭제되었습니다');
+        const tag = btn.closest('.keyword-tag');
+        tag.style.opacity = '0';
+        tag.style.transform = 'scale(0.8)';
+        setTimeout(() => tag.remove(), 300);
+        // ❌ Toast 제거
     });
 });
+
 
 /* ===============================
    회의 시작 - 개선된 버전
@@ -378,22 +423,25 @@ document.querySelector('.btn-primary').addEventListener('click', async () => {
     title.classList.remove('error');
     date.classList.remove('error');
 
-    // 필수값 검증
+    // 필수값 검증 - ✅ Toast 유지 (중요!)
     if (!title.value.trim()) {
         title.classList.add('error');
         showErrorMessage('회의 제목을 입력해주세요');
+        title.focus();
         return;
     }
     if (!date.value) {
         date.classList.add('error');
         showErrorMessage('회의 일시를 선택해주세요');
+        date.focus();
         return;
     }
 
-    // 참석자가 없으면 경고
+    // 참석자가 없으면 경고 - ✅ Toast 유지 (중요!)
     const participantItems = document.querySelectorAll('.participant-item');
     if (participantItems.length === 0) {
         showErrorMessage('최소 1명의 참석자를 추가해주세요');
+        participantInput.focus();
         return;
     }
 
@@ -455,6 +503,7 @@ document.querySelector('.btn-primary').addEventListener('click', async () => {
         localStorage.setItem("currentMeetingId", data.meetingId);
         console.log("💾 localStorage에 저장됨:", data.meetingId);
 
+        // ✅ Toast 유지 (중요한 성공 알림!)
         showSuccessMessage('회의가 성공적으로 생성되었습니다!');
 
         // 페이지 이동
@@ -466,6 +515,7 @@ document.querySelector('.btn-primary').addEventListener('click', async () => {
 
     } catch (err) {
         console.error("❌ 회의 생성 실패:", err);
+        // ✅ Toast 유지 (중요한 에러 알림!)
         showErrorMessage(`회의 생성 실패: ${err.message}`);
         
         // 버튼 재활성화
@@ -473,6 +523,7 @@ document.querySelector('.btn-primary').addEventListener('click', async () => {
         btn.textContent = '회의 시작';
     }
 });
+
 
 /* ===============================
    취소 버튼

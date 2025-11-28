@@ -312,12 +312,9 @@ function renderImportantMeetings(events) {
                     </div>
                 </div>`;
         });
-    } else if (events.length > 0) {
-        // 데이터는 있으나 중요 회의가 없음
-        listEl.innerHTML = noMeetingsHtml;
     } else {
-        // 데이터 로드 실패 또는 데이터 0건 (연동 필요 상태로 가정)
-        listEl.innerHTML = emptyStateHtml;
+        // 중요 회의가 없음 (데이터가 있든 없든 같은 메시지)
+        listEl.innerHTML = noMeetingsHtml;
     }
 }
 

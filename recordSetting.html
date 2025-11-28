@@ -5,11 +5,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>회의 세팅 - AI 회의록 서비스</title>
+  <link rel="icon" type="image/jpeg" href="static/images/dialog-logo.png" />
 
   <!-- 공통 스타일 -->
-  <link rel="stylesheet" href="./static/css/style.css">
+  <link rel="stylesheet" href="/static/css/style.css">
   <!-- 회의 세팅 전용 스타일 -->
-  <link rel="stylesheet" href="./static/css/recordSetting.css">
+  <link rel="stylesheet" href="/static/css/recordSetting.css">
   <link rel="stylesheet" href="static/css/chatbot.css">
 </head>
 
@@ -26,8 +27,15 @@
       <div id="record-setting" class="content-wrapper">
         <!-- Page Header -->
         <div class="page-header">
-          <h2>회의 세팅</h2>
-          <p>회의를 시작하기 전에 기본 정보를 입력해주세요</p>
+          <div class="page-header-text">
+            <h2>회의 세팅</h2>
+            <p>회의를 시작하기 전에 기본 정보를 입력해주세요</p>
+          </div>
+          <!-- 버튼 영역 -->
+          <div class="action-buttons">
+            <button class="btn-secondary">취소</button>
+            <button class="btn-primary">회의 시작</button>
+          </div>
         </div>
 
 
@@ -148,12 +156,6 @@
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- 버튼 영역 -->
-        <div class="action-buttons">
-          <button class="btn-secondary">취소</button>
-          <button class="btn-primary">회의 시작</button>
         </div>
       </div>
             <!-- 챗봇 컨테이너 -->

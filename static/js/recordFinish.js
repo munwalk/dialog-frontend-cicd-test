@@ -53,52 +53,79 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
   // 사이드바 로드
-  fetch("components/sidebar.html")
-    .then(res => res.text())
-    .then(html => {
-      const sidebar = document.getElementById("sidebar-container");
-      sidebar.innerHTML = html;
+// 사이드바 로드
+fetch("components/sidebar.html")
+  .then(res => res.text())
+  .then(html => {
+    const sidebar = document.getElementById("sidebar-container");
+    sidebar.innerHTML = html;
 
-      const currentPage = window.location.pathname.split("/").pop();
-      const navItems = sidebar.querySelectorAll(".nav-menu a");
+    const currentPage = window.location.pathname.split("/").pop();
+    const navItems = sidebar.querySelectorAll(".nav-menu a");
 
-      navItems.forEach(item => {
-        const linkPath = item.getAttribute("href");
+    navItems.forEach(item => {
+      const linkPath = item.getAttribute("href");
+      
+      // 먼저 모든 active 제거
+      item.classList.remove("active");
+      
+      // recording.html, recordFinish.html은 recordSetting 메뉴를 active로 표시
+      if (currentPage === "recording.html" || currentPage === "recordFinish.html") {
+        if (linkPath === "recordSetting.html") {
+          item.classList.add("active");
+        }
+      } else {
+        // 다른 페이지들은 기존 로직 유지
         if (linkPath === currentPage) {
           item.classList.add("active");
-        } else {
-          item.classList.remove("active");
         }
-      });
-
-      if (typeof loadCurrentUser === 'function') {
-        console.log('recordFinish.js: app.js의 loadCurrentUser()를 호출합니다.');
-        loadCurrentUser();
-      } else {
-        console.error('recordFinish.js: app.js의 loadCurrentUser() 함수를 찾을 수 없습니다.');
-
-        document.querySelectorAll(".user-avatar").forEach(el => { el.textContent = "U"; });
-        document.querySelectorAll(".user-name").forEach(el => { el.textContent = "사용자"; });
-        document.querySelectorAll(".user-email").forEach(el => { el.textContent = ""; });
       }
     });
+
+    if (typeof loadCurrentUser === 'function') {
+      console.log('recordFinish.js: app.js의 loadCurrentUser()를 호출합니다.');
+      loadCurrentUser();
+    } else {
+      console.error('recordFinish.js: app.js의 loadCurrentUser() 함수를 찾을 수 없습니다.');
+
+      document.querySelectorAll(".user-avatar").forEach(el => { el.textContent = "U"; });
+      document.querySelectorAll(".user-name").forEach(el => { el.textContent = "사용자"; });
+      document.querySelectorAll(".user-email").forEach(el => { el.textContent = ""; });
+    }
+  });
 
   // 서버에서 회의 데이터 로드
   await loadMeetingDataFromServer();
   
-  // sessionStorage에서 발화자 분석 토큰 확인 (recordPage에서 전달된 경우)
-  const savedToken = sessionStorage.getItem("speakerAnalysisToken");
-  if (savedToken) {
-      console.log("🎤 저장된 발화자 분석 토큰 발견:", savedToken);
-      speakerAnalysisToken = savedToken;
-      sessionStorage.removeItem("speakerAnalysisToken");
-    //   startCheckingSpeakerAnalysisResult();
-  } 
+  // 🔥 이미 발화자 분석 결과가 있는지 확인
+  const hasExistingTranscripts = meetingData && 
+                                 meetingData.transcripts && 
+                                 meetingData.transcripts.length > 0;
   
-  // 발화자 분석 상태 체크 및 UI 업데이트
-  checkSpeakerAnalysisStatus();
-  checkMappingCompletion();
-  checkActionGenerationButtonState(); // '내 할 일 생성' 버튼 상태도 체크
+  if (hasExistingTranscripts) {
+    // 이미 분석 결과가 있으면 분석 시작하지 않음
+    console.log("✅ 기존 발화자 분석 결과가 존재합니다. 새로운 분석을 시작하지 않습니다.");
+    
+    // 기존 데이터로 UI 업데이트만 수행
+    checkMappingCompletion();
+    checkActionGenerationButtonState();
+  } else {
+    // 분석 결과가 없을 때만 발화자 분석 진행
+    console.log("🎤 발화자 분석 결과가 없습니다. 분석을 시작합니다.");
+    
+    // sessionStorage에서 발화자 분석 토큰 확인 (recordPage에서 전달된 경우)
+    const savedToken = sessionStorage.getItem("speakerAnalysisToken");
+    if (savedToken) {
+        console.log("🎤 저장된 발화자 분석 토큰 발견:", savedToken);
+        speakerAnalysisToken = savedToken;
+        sessionStorage.removeItem("speakerAnalysisToken");
+    } 
+    
+    // 발화자 분석 상태 체크 및 UI 업데이트
+    checkSpeakerAnalysisStatus();
+    checkMappingCompletion();
+    checkActionGenerationButtonState();
+  }
 });
 
 function openConfirmModal(title, message, onConfirm) {
@@ -172,40 +199,100 @@ function showErrorModal(title, message, onConfirm) {
 }
 
 /* 공통 메시지 */
-function showSuccessMessage(msg) {
-  const div = document.createElement("div");
-  div.className = "success-toast";
-  div.textContent = msg;
-  Object.assign(div.style, {
-      position: "fixed",
-      top: "24px",
-      right: "24px",
-      background: "#10b981",
-      color: "#fff",
-      padding: "12px 20px",
-      borderRadius: "8px",
-      zIndex: "9999",
-  });
-  document.body.appendChild(div);
-  setTimeout(() => div.remove(), 2500);
+function showSuccessMessage(message) {
+    const existing = document.querySelector('.success-message');
+    if (existing) existing.remove();
+
+    const msg = document.createElement('div');
+    msg.className = 'success-message';
+    msg.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-20px);
+        background: linear-gradient(135deg, #8E44AD 0%, #9b59b6 100%);
+        color: white;
+        padding: 10px 16px;
+        border-radius: 8px;
+        box-shadow: 0 2px 12px rgba(142, 68, 173, 0.3);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        opacity: 0;
+        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        max-width: 400px;
+        font-weight: 500;
+        font-size: 14px;
+    `;
+    msg.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        <span>${message}</span>
+    `;
+    document.body.appendChild(msg);
+
+    // 등장 애니메이션
+    requestAnimationFrame(() => {
+        msg.style.opacity = '1';
+        msg.style.transform = 'translateX(-50%) translateY(0)';
+    });
+
+    setTimeout(() => {
+        msg.style.opacity = '0';
+        msg.style.transform = 'translateX(-50%) translateY(-20px)';
+        setTimeout(() => msg.remove(), 400);
+    }, 3000);
 }
 
-function showErrorMessage(msg) {
-  const div = document.createElement("div");
-  div.className = "error-toast";
-  div.textContent = msg;
-  Object.assign(div.style, {
-      position: "fixed",
-      top: "24px",
-      right: "24px",
-      background: "#ef4444",
-      color: "#fff",
-      padding: "12px 20px",
-      borderRadius: "8px",
-      zIndex: "9999",
-  });
-  document.body.appendChild(div);
-  setTimeout(() => div.remove(), 2500);
+function showErrorMessage(message) {
+    const existing = document.querySelector('.error-message');
+    if (existing) existing.remove();
+
+    const msg = document.createElement('div');
+    msg.className = 'error-message';
+    msg.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-20px);
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+        padding: 10px 16px;
+        border-radius: 20px;
+        box-shadow: 0 2px 12px rgba(239, 68, 68, 0.3);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        opacity: 0;
+        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        max-width: 400px;
+        font-weight: 500;
+        font-size: 14px;
+    `;
+    msg.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span>${message}</span>
+    `;
+    document.body.appendChild(msg);
+
+    // 등장 애니메이션
+    requestAnimationFrame(() => {
+        msg.style.opacity = '1';
+        msg.style.transform = 'translateX(-50%) translateY(0)';
+    });
+
+    setTimeout(() => {
+        msg.style.opacity = '0';
+        msg.style.transform = 'translateX(-50%) translateY(-20px)';
+        setTimeout(() => msg.remove(), 400);
+    }, 3000);
 }
 
 /* ===============================
@@ -215,7 +302,7 @@ async function startSpeakerAnalysis(audioUrl) {
   console.log("발화자 분석 시작 요청:", audioUrl);
 
   try {
-    const res = await fetch(`${BACKEND_BASE_URL}/api/analyze/object`, {
+    const res = await fetch(`${AI_BASE_URL}/api/analyze/object`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: 'include',
@@ -251,7 +338,7 @@ async function pollSpeakerResult(token, filename) {
 
   // filename 반드시 포함해야 Object Storage JSON 찾을 수 있음
   // const url = `http://localhost:8080/api/analyze/${token}?filename=${filename}`;
-  const url = `${BACKEND_BASE_URL}/api/analyze/${token}?filename=${filename}`;
+  const url = `${AI_BASE_URL}/api/analyze/${token}?filename=${filename}`;
 
   let tryCount = 0;
 
@@ -517,19 +604,21 @@ async function loadMeetingDataFromServer() {
         // ======================================
         // 자동 발화자 분석 실행 지점
         // ======================================
-        if (
+        // 🔥 이미 transcript가 있으면 발화자 분석을 시작하지 않음
+        const hasTranscripts = loadedTranscripts && loadedTranscripts.length > 0;
+        
+        if (!hasTranscripts && 
             meetingData.audioFileUrl &&
             typeof meetingData.audioFileUrl === "string" &&
             meetingData.audioFileUrl.startsWith("https://") &&
-            meetingData.audioFileUrl.includes("object.ncloudstorage.com") &&
-            meetingData.audioFileSize > 0
+            meetingData.audioFileUrl.includes("object.ncloudstorage.com")
         ) {
             console.log("🎤 자동 발화자 분석 시작:", meetingData.audioFileUrl);
             startSpeakerAnalysis(meetingData.audioFileUrl);
-        } else {
-            console.log("⚠️ 오디오 파일이 없거나 크기가 0이므로 자동 분석을 건너뜁니다.");
+        } else if (hasTranscripts) {
+            console.log("✅ 기존 발화 로그가 있어 발화자 분석을 건너뜁니다.");
         }
-
+        
         // 로컬 스토리지 백업
         localStorage.setItem("lastMeeting", JSON.stringify(meetingData));
 

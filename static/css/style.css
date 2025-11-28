@@ -17,8 +17,8 @@ body {
     display: flex;
     height: 100vh;
     transition: margin-right 0.3s ease;
-    margin-right: 14px;
-    margin-left: 14px;
+    /* margin-right: 14px;
+    margin-left: 14px; */
 
 }
 
