@@ -53,9 +53,42 @@ async function addDailyTodo() {
         });
 
         if (response.ok) {
+            // 서버에서 생성된 데이터를 받아옵니다 (ID 등 필요)
+            const newEventData = await response.json();
+
+            // 로컬 상태(calendarEvents)에 즉시 추가할 객체 생성
+            // 서버 응답(GoogleEventResponseDTO)과 프론트엔드 모델을 맞춥니다.
+            const newLocalEvent = {
+                id: newEventData.id,            // 구글 ID 또는 DB ID
+                googleEventId: newEventData.id, // 삭제/수정을 위해 ID 매핑
+                title: todoTitle,
+                eventDate: targetDate,
+                eventType: 'TASK',              // To-do는 TASK 타입
+                isCompleted: false,
+                isImportant: false
+            };
+
+            // 전역 배열에 추가
+            calendarEvents.push(newLocalEvent);
+
+            // UI 부분 갱신 (전체 렌더링 X -> 필요한 부분만 O)
+            // 1. 달력 그리드에 점(Dot) 다시 그리기
+            displayEventDots(calendarEvents); 
+            
+            // 2. 우측 To-do 리스트 갱신
+            renderTodoList(targetDate);
+
+            // 3. 만약 날짜 오버레이가 켜져 있다면, 거기도 갱신
+            const dailyOverlay = document.getElementById('dailyEventsList');
+            if (dailyOverlay && !dailyOverlay.classList.contains('hidden')) {
+                if (typeof showDailyEventOverlay === 'function') {
+                    showDailyEventOverlay(targetDate);
+                }
+            }
+
             showAlert('할 일이 추가되었습니다'); 
             todoInput.value = ''; 
-            renderCalendar(); 
+
         } else {
             const errorText = await response.text();
             console.error(` To-do 생성 실패 (${response.status}):`, errorText);
